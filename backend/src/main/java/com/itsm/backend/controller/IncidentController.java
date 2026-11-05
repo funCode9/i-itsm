@@ -1,0 +1,135 @@
+package com.itsm.backend.controller;
+
+import com.itsm.backend.domain.entity.Incident;
+import com.itsm.backend.domain.entity.IncidentNote;
+import com.itsm.backend.domain.entity.User;
+import com.itsm.backend.domain.enums.IncidentStatus;
+import com.itsm.backend.dto.*;
+import com.itsm.backend.repository.UserRepository;
+import com.itsm.backend.service.IncidentService;
+import com.itsm.backend.service.IncidentNoteService;
+import com.itsm.backend.service.intelligence.CategorySuggestionService;
+import com.itsm.backend.service.intelligence.DuplicateDetectionService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/incidents")
+@RequiredArgsConstructor
+public class IncidentController {
+
+    private final IncidentService incidentService;
+    private final IncidentNoteService noteService;
+    private final CategorySuggestionService categorySuggestionService;
+    private final DuplicateDetectionService duplicateDetectionService;
+    private final UserRepository userRepository;
+
+    @PostMapping
+    public ResponseEntity<Incident> createIncident(@Valid @RequestBody CreateIncidentRequest req,
+                                                    Authentication auth) {
+        User user = getUser(auth);
+        Incident incident = incidentService.createIncident(req.getTitle(), req.getDescription(),
+                user.getId(), req.getCategoryId(), req.getServiceId(),
+                req.getImpact(), req.getUrgency(), req.getBusinessCriticality());
+        return ResponseEntity.ok(incident);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Incident>> getAllIncidents(Authentication auth) {
+        User user = getUser(auth);
+        List<Incident> incidents = switch (user.getRole()) {
+            case EMPLOYEE -> incidentService.getIncidentsByReporter(user.getId());
+            case TECHNICIAN -> incidentService.getIncidentsByTechnicianForUser(user.getId());
+            case ADMINISTRATOR -> incidentService.getAllIncidents();
+        };
+        return ResponseEntity.ok(incidents);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Incident> getIncident(@PathVariable Long id) {
+        return ResponseEntity.ok(incidentService.getIncidentById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Incident> updateStatus(@PathVariable Long id,
+                                                  @RequestBody UpdateIncidentStatusRequest req,
+                                                  Authentication auth) {
+        User user = getUser(auth);
+        Incident updated = incidentService.transitionStatus(id, req.getNewStatus(),
+                req.getResolutionDetails(), req.getClosureNotes(), user);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{id}/classify")
+    public ResponseEntity<Incident> classify(@PathVariable Long id,
+                                              @RequestBody ClassifyIncidentRequest req,
+                                              Authentication auth) {
+        User user = getUser(auth);
+        Incident classified = incidentService.classifyAndAssign(id, req.getCategoryId(),
+                req.getServiceId(), req.getImpact(), req.getUrgency(),
+                req.getBusinessCriticality(), user);
+        return ResponseEntity.ok(classified);
+    }
+
+    @PostMapping("/{id}/assign/{technicianId}")
+    public ResponseEntity<Incident> manualAssign(@PathVariable Long id,
+                                                   @PathVariable Long technicianId,
+                                                   Authentication auth) {
+        User user = getUser(auth);
+        return ResponseEntity.ok(incidentService.manualAssign(id, technicianId, user));
+    }
+
+    @GetMapping("/{id}/notes")
+    public ResponseEntity<List<IncidentNote>> getNotes(@PathVariable Long id, Authentication auth) {
+        User user = getUser(auth);
+        boolean isEmployee = user.getRole() == com.itsm.backend.domain.enums.Role.EMPLOYEE;
+        List<IncidentNote> notes = isEmployee
+                ? noteService.getVisibleNotes(id)
+                : noteService.getNotesByIncident(id);
+        return ResponseEntity.ok(notes);
+    }
+
+    @PostMapping("/{id}/notes")
+    public ResponseEntity<IncidentNote> addNote(@PathVariable Long id,
+                                                 @Valid @RequestBody AddNoteRequest req,
+                                                 Authentication auth) {
+        User user = getUser(auth);
+        boolean visible = user.getRole() == com.itsm.backend.domain.enums.Role.EMPLOYEE || req.isVisibleToEmployee();
+        IncidentNote note = noteService.addNote(id, user.getId(), req.getContent(), req.getNoteType(), visible);
+        return ResponseEntity.ok(note);
+    }
+
+    @GetMapping("/suggest-category")
+    public ResponseEntity<?> suggestCategory(@RequestParam String title,
+                                              @RequestParam(required = false) String description) {
+        return categorySuggestionService.suggestCategory(title, description)
+                .map(cat -> ResponseEntity.ok((Object) Map.of("categoryId", cat.getId(), "categoryName", cat.getName())))
+                .orElse(ResponseEntity.ok(Map.of("message", "No suggestion available")));
+    }
+
+    @GetMapping("/check-duplicates")
+    public ResponseEntity<List<Incident>> checkDuplicates(@RequestParam String title,
+                                                            @RequestParam(required = false) String description,
+                                                            @RequestParam(required = false) Long categoryId,
+                                                            @RequestParam(required = false) Long serviceId,
+                                                            @RequestParam(required = false) Long excludeId) {
+        return ResponseEntity.ok(duplicateDetectionService.findPotentialDuplicates(
+                title, description, categoryId, serviceId, excludeId));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<Incident>> getMyIncidents(Authentication auth) {
+        User user = getUser(auth);
+        return ResponseEntity.ok(incidentService.getIncidentsByReporter(user.getId()));
+    }
+
+    private User getUser(Authentication auth) {
+        return userRepository.findByUsername(auth.getName()).orElseThrow();
+    }
+}
