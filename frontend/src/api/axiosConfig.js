@@ -12,11 +12,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 — redirect to login
+// Handle 401 — redirect to login, except for auth requests
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
       localStorage.clear();
       window.location.href = '/login';
     }
