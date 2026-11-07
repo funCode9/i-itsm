@@ -28,7 +28,8 @@ public class IncidentSla {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"duplicateOf", "reporter", "assignedTechnician", "category", "service"})
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "incident_id", unique = true, nullable = false)
     private Incident incident;
 

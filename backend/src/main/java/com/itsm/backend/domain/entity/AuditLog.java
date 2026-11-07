@@ -29,11 +29,13 @@ public class AuditLog {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"passwordHash"})
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "actor_id")
     private User actor;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"duplicateOf", "reporter", "assignedTechnician", "category", "service"})
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "incident_id")
     private Incident incident;
 

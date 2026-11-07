@@ -110,6 +110,7 @@ public class Incident {
     private String closureNotes;
 
     /** If this incident is detected as a potential duplicate of another */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "duplicate_of_id")
     private Incident duplicateOf;
