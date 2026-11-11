@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Button, List, ListItem, ListItemText, Divider, Chip } from '@mui/material';
-import { Assignment, CheckCircle, HourglassEmpty, TrendingUp } from '@mui/icons-material';
+import { Grid, Box, Typography, Button, Paper } from '@mui/material';
+import {
+  AssignmentOutlined, CheckCircleOutline, HourglassEmptyOutlined,
+  SpeedOutlined, RefreshOutlined
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { technicianAPI } from '../../api';
-import { StatusChip, PriorityChip } from '../../components/StatusChip';
+import MetricCard from '../../components/MetricCard';
+import IncidentQueueTable from '../../components/IncidentQueueTable';
+import IncidentDrawer from '../../components/IncidentDrawer';
+import { technicianApi, incidentApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TechnicianDashboard() {
@@ -12,85 +17,124 @@ export default function TechnicianDashboard() {
   const { user } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  const loadData = () => {
+    setLoading(true);
+    technicianApi.getMyIncidents()
+      .then((r) => setIncidents(r.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    technicianAPI.getMyIncidents().then(r => setIncidents(r.data)).catch(() => {}).finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  const open = incidents.filter(i => !['RESOLVED','VERIFIED','CLOSED'].includes(i.status));
-  const inProgress = incidents.filter(i => i.status === 'IN_PROGRESS');
-  const resolved = incidents.filter(i => ['RESOLVED','VERIFIED','CLOSED'].includes(i.status));
-  const critical = incidents.filter(i => i.priority === 'P1_CRITICAL' && !['RESOLVED','VERIFIED','CLOSED'].includes(i.status));
+  const openIncidents = incidents.filter(i => !['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status));
+  const inProgressIncidents = incidents.filter(i => i.status === 'IN_PROGRESS');
+  const resolvedIncidents = incidents.filter(i => ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status));
+  const criticalIncidents = incidents.filter(i => i.priority === 'P1_CRITICAL' && !['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status));
 
   return (
-    <Layout title="Technician Dashboard">
+    <Layout
+      title="Technician Workbench"
+      breadcrumbs={['Technician', 'Workbench']}
+      actions={
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<RefreshOutlined />}
+          onClick={loadData}
+          sx={{ borderColor: '#cbd5e1', color: '#475569' }}
+        >
+          Refresh Queue
+        </Button>
+      }
+    >
+      {/* Header Info */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight="bold">
-          Welcome, {user?.fullName?.split(' ')[0] || 'Technician'} 👨‍💻
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: 'Space Grotesk, sans-serif',
+            fontWeight: 700,
+            color: '#15243b',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Technician Workbench — {user?.fullName || user?.username} 👨‍💻
         </Typography>
-        <Typography variant="body2" color="text.secondary">Here's your current workload</Typography>
+        <Typography variant="body2" sx={{ color: '#64748b', mt: 0.3 }}>
+          Manage your assigned incident tickets, log diagnostic solutions, acknowledge SLAs, and resolve escalations.
+        </Typography>
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {[
-          { title: 'Open Incidents', value: open.length, icon: <Assignment />, color: '#1565c0' },
-          { title: 'In Progress', value: inProgress.length, icon: <HourglassEmpty />, color: '#f57c00' },
-          { title: 'Resolved', value: resolved.length, icon: <CheckCircle />, color: '#2e7d32' },
-          { title: 'P1 Critical', value: critical.length, icon: <TrendingUp />, color: '#c62828' },
-        ].map(({ title, value, icon, color }) => (
-          <Grid item xs={12} sm={6} md={3} key={title}>
-            <Card elevation={2} sx={{ borderRadius: 3 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">{title}</Typography>
-                    <Typography variant="h4" fontWeight="bold" color={color}>{value}</Typography>
-                  </Box>
-                  <Box sx={{ bgcolor: color + '20', p: 1.5, borderRadius: 2 }}>
-                    {React.cloneElement(icon, { sx: { color, fontSize: 28 } })}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+      {/* Metric Grid */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Assigned Queue"
+            value={openIncidents.length}
+            subtitle="Pending acknowledgment or investigation"
+            icon={<AssignmentOutlined fontSize="small" />}
+            color="#4f85c8"
+            bgColor="#eff6ff"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="In Progress"
+            value={inProgressIncidents.length}
+            subtitle="Actively troubleshooting"
+            icon={<HourglassEmptyOutlined fontSize="small" />}
+            color="#d97706"
+            bgColor="#fffbeb"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="Resolved Tickets"
+            value={resolvedIncidents.length}
+            subtitle="Completed resolutions"
+            icon={<CheckCircleOutline fontSize="small" />}
+            color="#059669"
+            bgColor="#ecfdf5"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            title="P1 Critical"
+            value={criticalIncidents.length}
+            subtitle="Strict 30m SLA resolution target"
+            icon={<SpeedOutlined fontSize="small" />}
+            color="#dc2626"
+            bgColor="#fef2f2"
+          />
+        </Grid>
       </Grid>
 
-      <Card elevation={2} sx={{ borderRadius: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6" fontWeight="bold">Active Incidents</Typography>
-            <Button size="small" onClick={() => navigate('/technician/incidents')}>View All</Button>
-          </Box>
-          {open.length === 0 ? (
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <CheckCircle sx={{ fontSize: 48, color: 'success.main' }} />
-              <Typography color="text.secondary">No active incidents. Great work! 🎉</Typography>
-            </Box>
-          ) : (
-            <List>
-              {open.slice(0, 8).map((inc, i) => (
-                <React.Fragment key={inc.id}>
-                  {i > 0 && <Divider />}
-                  <ListItem button onClick={() => navigate(`/incidents/${inc.id}`)}>
-                    <ListItemText
-                      primary={<Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                        <Typography variant="body2" fontWeight="bold" color="primary">{inc.incidentNumber}</Typography>
-                        <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>{inc.title}</Typography>
-                      </Box>}
-                      secondary={`Reporter: ${inc.reporter?.fullName} • ${new Date(inc.createdAt).toLocaleDateString()}`}
-                    />
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {inc.priority && <PriorityChip priority={inc.priority} />}
-                      <StatusChip status={inc.status} />
-                    </Box>
-                  </ListItem>
-                </React.Fragment>
-              ))}
-            </List>
-          )}
-        </CardContent>
-      </Card>
+      {/* Queue Table */}
+      <IncidentQueueTable
+        incidents={incidents}
+        title="Your Assigned Incident Queue"
+        subtitle="Click any row to acknowledge, append diagnostic notes, and record official resolutions"
+        onSelectIncident={(inc) => setSelectedIncident(inc)}
+        loading={loading}
+      />
+
+      {/* Quick Inspection Drawer */}
+      <IncidentDrawer
+        open={Boolean(selectedIncident)}
+        incident={selectedIncident}
+        onClose={() => setSelectedIncident(null)}
+        onRefresh={() => {
+          loadData();
+          if (selectedIncident) {
+            incidentApi.getById(selectedIncident.id).then((res) => setSelectedIncident(res.data)).catch(() => {});
+          }
+        }}
+      />
     </Layout>
   );
 }

@@ -10,9 +10,15 @@ export const incidentAPI = {
   getAll: () => api.get('/incidents'),
   getMy: () => api.get('/incidents/my'),
   getById: (id) => api.get(`/incidents/${id}`),
-  updateStatus: (id, data) => api.patch(`/incidents/${id}/status`, data),
-  classify: (id, data) => api.post(`/incidents/${id}/classify`, data),
+  updateStatus: (id, newStatus, resolutionDetails = null, closureNotes = null) =>
+    api.patch(`/incidents/${id}/status`, { newStatus, resolutionDetails, closureNotes }),
+  resolve: (id, resolutionDetails) =>
+    api.patch(`/incidents/${id}/status`, { newStatus: 'RESOLVED', resolutionDetails }),
+  classify: (id, categoryId, serviceId, technicianId = null) =>
+    api.post(`/incidents/${id}/classify`, { categoryId, serviceId, technicianId }),
   manualAssign: (id, techId) => api.post(`/incidents/${id}/assign/${techId}`),
+  autoAssign: (id, categoryId = 1, serviceId = 1) =>
+    api.post(`/incidents/${id}/classify`, { categoryId, serviceId }),
   getNotes: (id) => api.get(`/incidents/${id}/notes`),
   addNote: (id, data) => api.post(`/incidents/${id}/notes`, data),
   suggestCategory: (title, description) =>
@@ -48,6 +54,7 @@ export const serviceAPI = {
 export const notificationAPI = {
   getAll: () => api.get('/notifications'),
   getUnreadCount: () => api.get('/notifications/unread-count'),
+  getUnread: () => api.get('/notifications'),
   markRead: (id) => api.patch(`/notifications/${id}/read`),
   markAllRead: () => api.patch('/notifications/read-all'),
 };
@@ -92,3 +99,16 @@ export const userAPI = {
   getMe: () => api.get('/users/me'),
   updateMe: (data) => api.put('/users/me', data),
 };
+
+// Convenient alias exports for both naming conventions
+export const authApi = authAPI;
+export const incidentApi = incidentAPI;
+export const technicianApi = technicianAPI;
+export const categoryApi = categoryAPI;
+export const serviceApi = serviceAPI;
+export const notificationApi = notificationAPI;
+export const feedbackApi = feedbackAPI;
+export const auditApi = auditAPI;
+export const slaPolicyApi = slaPolicyAPI;
+export const adminApi = adminAPI;
+export const userApi = userAPI;

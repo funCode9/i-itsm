@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, Typography, Grid, Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  Grid, Paper, Typography, Box, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Chip
+} from '@mui/material';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 import Layout from '../../components/Layout';
-import { adminAPI } from '../../api';
+import { adminApi } from '../../api';
 
-const COLORS = ['#1565c0', '#2e7d32', '#f57c00', '#d32f2f', '#7b1fa2', '#0097a7'];
+const PIE_COLORS = ['#dc2626', '#ea580c', '#d97706', '#2563eb', '#059669', '#7c3aed'];
 
 export default function ReportsPage() {
   const [byStatus, setByStatus] = useState([]);
@@ -13,99 +19,164 @@ export default function ReportsPage() {
   const [workload, setWorkload] = useState([]);
 
   useEffect(() => {
-    adminAPI.getByStatus().then(res => {
-      setByStatus(Object.entries(res.data).map(([name, value]) => ({ name, value })));
-    }).catch(() => {});
+    adminApi.getByStatus()
+      .then((res) => setByStatus(Object.entries(res.data || {}).map(([name, value]) => ({ name: name.replace('_', ' '), value }))))
+      .catch(() => {});
 
-    adminAPI.getByPriority().then(res => {
-      setByPriority(Object.entries(res.data).map(([name, value]) => ({ name, value })));
-    }).catch(() => {});
+    adminApi.getByPriority()
+      .then((res) => setByPriority(Object.entries(res.data || {}).map(([name, value]) => ({ name: name.replace('_', ' '), value }))))
+      .catch(() => {});
 
-    adminAPI.getByCategory().then(res => {
-      setByCategory(Object.entries(res.data).map(([name, value]) => ({ name, value })));
-    }).catch(() => {});
+    adminApi.getByCategory()
+      .then((res) => setByCategory(Object.entries(res.data || {}).map(([name, value]) => ({ name, value }))))
+      .catch(() => {});
 
-    adminAPI.getWorkload().then(res => setWorkload(res.data)).catch(() => {});
+    adminApi.getWorkload()
+      .then((res) => setWorkload(res.data || []))
+      .catch(() => {});
   }, []);
 
   return (
-    <Layout title="Reports & Analytical Dashboards">
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+    <Layout
+      title="Analytics & Operations Reports"
+      breadcrumbs={['Analytics', 'Executive Telemetry']}
+    >
+      <Grid container spacing={3}>
+        {/* Incidents by Status */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ borderRadius: 3, p: 2 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Incidents by Status</Typography>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={byStatus}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#1565c0" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1rem', color: '#15243b', mb: 2 }}>
+              Incidents by Lifecycle Status
+            </Typography>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byStatus}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#4f85c8" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
         </Grid>
 
+        {/* Incidents by Priority */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ borderRadius: 3, p: 2 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Incidents by Priority</Typography>
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={byPriority} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                    {byPriority.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1rem', color: '#15243b', mb: 2 }}>
+              Priority Distribution (P1–P4)
+            </Typography>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie
+                  data={byPriority}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  innerRadius={45}
+                  label
+                >
+                  {byPriority.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </Paper>
         </Grid>
 
+        {/* Incidents by Category */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ borderRadius: 3, p: 2 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Incidents by Category</Typography>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={byCategory}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#2e7d32" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1rem', color: '#15243b', mb: 2 }}>
+              Incidents by Service Category
+            </Typography>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={byCategory}>
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#059669" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Paper>
         </Grid>
 
+        {/* Technician Workload Balance */}
         <Grid item xs={12} md={6}>
-          <Card elevation={2} sx={{ borderRadius: 3, p: 2 }}>
-            <CardContent>
-              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Technician Workload Balance</Typography>
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'grey.100' }}>
-                      <TableCell>Technician</TableCell>
-                      <TableCell>Specialization</TableCell>
-                      <TableCell align="right">Active Incidents</TableCell>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff',
+              height: '100%',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1rem', color: '#15243b', mb: 2 }}>
+              Technician Real-Time Workload Balance
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Technician</TableCell>
+                    <TableCell>Specialization</TableCell>
+                    <TableCell align="right">Active Tickets</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {workload.map((w) => (
+                    <TableRow key={w.technicianId} hover>
+                      <TableCell sx={{ fontWeight: 600, color: '#1e293b' }}>{w.name}</TableCell>
+                      <TableCell sx={{ color: '#64748b' }}>{w.specialization}</TableCell>
+                      <TableCell align="right">
+                        <Chip
+                          label={`${w.activeIncidents ?? 0} tickets`}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            bgcolor: (w.activeIncidents ?? 0) > 3 ? '#fff7ed' : '#ecfdf5',
+                            color: (w.activeIncidents ?? 0) > 3 ? '#c2410c' : '#047857',
+                          }}
+                        />
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {workload.map(w => (
-                      <TableRow key={w.technicianId} hover>
-                        <TableCell fontWeight="bold">{w.name}</TableCell>
-                        <TableCell>{w.specialization}</TableCell>
-                        <TableCell align="right">{w.activeIncidents}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
         </Grid>
       </Grid>
     </Layout>

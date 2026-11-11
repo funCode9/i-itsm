@@ -1,108 +1,138 @@
 import React, { useEffect, useState } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Button, Chip, List, ListItem, ListItemText, Divider } from '@mui/material';
-import { BugReport, Assignment, CheckCircle, HourglassEmpty, Add } from '@mui/icons-material';
+import { Grid, Box, Typography, Button, Paper } from '@mui/material';
+import {
+  BugReportOutlined, CheckCircleOutline, HourglassEmptyOutlined,
+  WarningAmberOutlined, AddOutlined
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { incidentAPI } from '../../api';
-import { StatusChip, PriorityChip } from '../../components/StatusChip';
+import MetricCard from '../../components/MetricCard';
+import IncidentQueueTable from '../../components/IncidentQueueTable';
+import IncidentDrawer from '../../components/IncidentDrawer';
+import { incidentApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-
-function StatCard({ title, value, icon, color }) {
-  return (
-    <Card elevation={2} sx={{ borderRadius: 3 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="body2" color="text.secondary">{title}</Typography>
-            <Typography variant="h4" fontWeight="bold" color={color}>{value}</Typography>
-          </Box>
-          <Box sx={{ bgcolor: color + '20', p: 1.5, borderRadius: 2 }}>
-            {React.cloneElement(icon, { sx: { color, fontSize: 28 } })}
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  const loadData = () => {
+    incidentApi.getMy()
+      .then((r) => setIncidents(r.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    incidentAPI.getMy().then(r => setIncidents(r.data)).catch(() => {}).finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  const open = incidents.filter(i => !['RESOLVED','VERIFIED','CLOSED'].includes(i.status));
-  const resolved = incidents.filter(i => ['RESOLVED','VERIFIED','CLOSED'].includes(i.status));
-  const critical = incidents.filter(i => i.priority === 'P1_CRITICAL');
+  const openIncidents = incidents.filter(i => !['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status));
+  const resolvedIncidents = incidents.filter(i => ['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status));
+  const criticalIncidents = incidents.filter(i => i.priority === 'P1_CRITICAL');
 
   return (
-    <Layout title="Employee Dashboard">
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h5" fontWeight="bold">
-          Welcome back, {user?.fullName?.split(' ')[0] || 'User'} 👋
-        </Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => navigate('/employee/report')}>
-          Report New Incident
+    <Layout
+      title="Employee Portal"
+      breadcrumbs={['Dashboard']}
+      actions={
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<AddOutlined />}
+          onClick={() => navigate('/employee/report')}
+          sx={{ bgcolor: '#4f85c8', '&:hover': { bgcolor: '#3b70b0' } }}
+        >
+          Report Incident
         </Button>
+      }
+    >
+      {/* Welcome Banner */}
+      <Box sx={{ mb: 3 }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: 'Space Grotesk, sans-serif',
+            fontWeight: 700,
+            color: '#15243b',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Welcome back, {user?.fullName?.split(' ')[0] || user?.username} 👋
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#64748b', mt: 0.3 }}>
+          Monitor your reported workplace IT incidents, track live technician resolutions, and verify fixes.
+        </Typography>
       </Box>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Modular Metric Grid */}
+      <Grid container spacing={2.5} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Total Incidents" value={incidents.length} icon={<BugReport />} color="#1565c0" />
+          <MetricCard
+            title="Total Tickets"
+            value={incidents.length}
+            subtitle="All tickets filed by you"
+            icon={<BugReportOutlined fontSize="small" />}
+            color="#4f85c8"
+            bgColor="#eff6ff"
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Open" value={open.length} icon={<HourglassEmpty />} color="#f57c00" />
+          <MetricCard
+            title="Active Tickets"
+            value={openIncidents.length}
+            subtitle="Currently under investigation"
+            icon={<HourglassEmptyOutlined fontSize="small" />}
+            color="#d97706"
+            bgColor="#fffbeb"
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Resolved" value={resolved.length} icon={<CheckCircle />} color="#2e7d32" />
+          <MetricCard
+            title="Resolved & Closed"
+            value={resolvedIncidents.length}
+            subtitle="Verified solutions"
+            icon={<CheckCircleOutline fontSize="small" />}
+            color="#059669"
+            bgColor="#ecfdf5"
+          />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard title="Critical" value={critical.length} icon={<Assignment />} color="#c62828" />
+          <MetricCard
+            title="Critical P1"
+            value={criticalIncidents.length}
+            subtitle="Requires rapid intervention"
+            icon={<WarningAmberOutlined fontSize="small" />}
+            color="#dc2626"
+            bgColor="#fef2f2"
+          />
         </Grid>
       </Grid>
 
-      <Card elevation={2} sx={{ borderRadius: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6" fontWeight="bold">Recent Incidents</Typography>
-            <Button size="small" onClick={() => navigate('/employee/incidents')}>View All</Button>
-          </Box>
-          {loading ? <Typography>Loading...</Typography> :
-            incidents.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography color="text.secondary">No incidents yet.</Typography>
-                <Button variant="outlined" sx={{ mt: 1 }} onClick={() => navigate('/employee/report')}>
-                  Report Your First Incident
-                </Button>
-              </Box>
-            ) : (
-              <List>
-                {incidents.slice(0, 5).map((inc, i) => (
-                  <React.Fragment key={inc.id}>
-                    {i > 0 && <Divider />}
-                    <ListItem button onClick={() => navigate(`/incidents/${inc.id}`)}>
-                      <ListItemText
-                        primary={<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="body2" fontWeight="bold" color="primary">{inc.incidentNumber}</Typography>
-                          <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>{inc.title}</Typography>
-                        </Box>}
-                        secondary={new Date(inc.createdAt).toLocaleDateString()}
-                      />
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {inc.priority && <PriorityChip priority={inc.priority} />}
-                        <StatusChip status={inc.status} />
-                      </Box>
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-              </List>
-            )}
-        </CardContent>
-      </Card>
+      {/* Incident Queue Table with Slide-Over Drawer */}
+      <IncidentQueueTable
+        incidents={incidents}
+        title="Your Reported Incidents"
+        subtitle="Click any ticket row for quick slide-over inspection and lifecycle verification"
+        onSelectIncident={(inc) => setSelectedIncident(inc)}
+        loading={loading}
+      />
+
+      {/* Quick Inspection Drawer */}
+      <IncidentDrawer
+        open={Boolean(selectedIncident)}
+        incident={selectedIncident}
+        onClose={() => setSelectedIncident(null)}
+        onRefresh={() => {
+          loadData();
+          if (selectedIncident) {
+            incidentApi.getById(selectedIncident.id).then((res) => setSelectedIncident(res.data)).catch(() => {});
+          }
+        }}
+      />
     </Layout>
   );
 }

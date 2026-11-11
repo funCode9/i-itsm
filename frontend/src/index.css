@@ -1,23 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Reference Operations Palette */
+  --color-brand-navy: #15243b;
+  --color-brand-navy-dark: #0f1a2b;
+  --color-brand-surface: #1e314d;
+  --color-bg-main: #f4f6fa;
+  --color-card-border: #e2e8f0;
+
+  /* Priority Accent Colors */
+  --p1-critical: #e53e3e;
+  --p2-high: #ed8936;
+  --p3-medium: #d69e2e;
+  --p4-low: #3b82f6;
+
+  /* SLA States */
+  --sla-good: #10b981;
+  --sla-warning: #f59e0b;
+  --sla-breach: #ef4444;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Roboto', sans-serif;
-  background-color: #f5f5f5;
+html, body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-main);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+h1, h2, h3, h4, h5, h6, .metric-number, .brand-title {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Priority Left Accent Bars */
+.priority-bar-p1 { border-left: 4px solid var(--p1-critical) !important; }
+.priority-bar-p2 { border-left: 4px solid var(--p2-high) !important; }
+.priority-bar-p3 { border-left: 4px solid var(--p3-medium) !important; }
+.priority-bar-p4 { border-left: 4px solid var(--p4-low) !important; }
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
+/* Pulse Animation for System Status */
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.status-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse-green 2s infinite;
 }
