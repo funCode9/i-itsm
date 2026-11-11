@@ -8,17 +8,21 @@ import {
   Search,
   AddOutlined,
   TuneOutlined,
-  NavigateNext
+  NavigateNext,
+  DarkModeOutlined,
+  LightModeOutlined
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { useThemeMode } from '../context/ThemeModeContext';
 import { notificationApi, adminApi } from '../api';
 
 export default function Layout({ title, breadcrumbs = [], actions, children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { mode, toggleTheme } = useThemeMode();
   const [unreadCount, setUnreadCount] = useState(0);
   const [strategy, setStrategy] = useState(null);
 
@@ -37,7 +41,7 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
   }, [user]);
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f4f6fa' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Sidebar />
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Top Operations Bar */}
@@ -46,8 +50,9 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
           color="inherit"
           elevation={0}
           sx={{
-            bgcolor: '#ffffff',
-            borderBottom: '1px solid #e2e8f0',
+            bgcolor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
             zIndex: (th) => th.zIndex.drawer + 1,
           }}
         >
@@ -125,17 +130,42 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
             {/* Custom page actions */}
             {actions}
 
+            {/* Theme Mode Toggle (Light/Dark) */}
+            <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+              <IconButton
+                onClick={toggleTheme}
+                sx={{
+                  color: 'text.secondary',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: '8px',
+                  width: 38,
+                  height: 38,
+                  bgcolor: 'background.paper',
+                  '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
+                }}
+              >
+                {mode === 'dark' ? (
+                  <LightModeOutlined fontSize="small" sx={{ color: '#f59e0b' }} />
+                ) : (
+                  <DarkModeOutlined fontSize="small" />
+                )}
+              </IconButton>
+            </Tooltip>
+
             {/* Notifications Bell */}
             <Tooltip title="Notifications">
               <IconButton
                 onClick={() => navigate('/notifications')}
                 sx={{
-                  color: '#64748b',
-                  border: '1px solid #e2e8f0',
+                  color: 'text.secondary',
+                  border: '1px solid',
+                  borderColor: 'divider',
                   borderRadius: '8px',
                   width: 38,
                   height: 38,
-                  '&:hover': { bgcolor: '#f8fafc', color: '#15243b' },
+                  bgcolor: 'background.paper',
+                  '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
                 }}
               >
                 <Badge badgeContent={unreadCount} color="error" max={99}>
@@ -147,7 +177,7 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
         </AppBar>
 
         {/* Page Content Container */}
-        <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, bgcolor: '#f4f6fa' }}>
+        <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, bgcolor: 'background.default' }}>
           {children}
         </Box>
       </Box>

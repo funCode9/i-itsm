@@ -44,8 +44,9 @@ export default function IncidentQueueTable({
       elevation={0}
       sx={{
         borderRadius: '10px',
-        border: '1px solid #e2e8f0',
-        bgcolor: '#ffffff',
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
         overflow: 'hidden',
       }}
     >
@@ -53,7 +54,8 @@ export default function IncidentQueueTable({
       <Box
         sx={{
           p: 2.2,
-          borderBottom: '1px solid #edf0f4',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -68,7 +70,7 @@ export default function IncidentQueueTable({
               sx={{
                 fontFamily: 'Space Grotesk, sans-serif',
                 fontWeight: 700,
-                color: '#15243b',
+                color: 'text.primary',
                 fontSize: '1.05rem',
               }}
             >
@@ -199,7 +201,7 @@ export default function IncidentQueueTable({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: '#1e293b',
+                        color: 'text.primary',
                         fontSize: '0.84rem',
                         lineHeight: 1.25,
                       }}
@@ -209,7 +211,7 @@ export default function IncidentQueueTable({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: '#64748b',
+                        color: 'text.secondary',
                         fontSize: '0.72rem',
                         display: 'block',
                         mt: 0.3,

@@ -158,10 +158,11 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
           width: { xs: '100vw', sm: 540 },
           maxWidth: '100vw',
           boxSizing: 'border-box',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-15px 0 40px rgba(21, 36, 59, 0.12)',
+          boxShadow: '-15px 0 40px rgba(0, 0, 0, 0.25)',
         },
       }}
     >
@@ -169,11 +170,12 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
       <Box
         sx={{
           p: 2.5,
-          borderBottom: '1px solid #edf0f4',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          bgcolor: '#ffffff',
+          bgcolor: 'background.paper',
           position: 'sticky',
           top: 0,
           zIndex: 10,

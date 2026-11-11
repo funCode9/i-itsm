@@ -80,7 +80,7 @@ export default function AdminDashboard() {
           sx={{
             fontFamily: 'Space Grotesk, sans-serif',
             fontWeight: 700,
-            color: '#15243b',
+            color: 'text.primary',
             letterSpacing: '-0.02em',
           }}
         >
@@ -171,8 +171,9 @@ export default function AdminDashboard() {
             sx={{
               p: 2.5,
               borderRadius: '10px',
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -194,7 +195,7 @@ export default function AdminDashboard() {
                 />
               </Box>
 
-              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.82rem', mb: 2 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 2 }}>
                 Automatically routes incoming tickets based on technician specialization and current workload.
               </Typography>
 
@@ -216,9 +217,9 @@ export default function AdminDashboard() {
               </FormControl>
 
               {/* Strategy Telemetry & Distribution (Optimized Space) */}
-              <Box sx={{ p: 1.8, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #edf0f4' }}>
+              <Box sx={{ p: 1.8, bgcolor: 'action.hover', borderRadius: '8px', border: '1px solid', borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.2 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#334155', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.04em' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.primary', textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.04em' }}>
                     Routing Performance
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
@@ -231,26 +232,26 @@ export default function AdminDashboard() {
 
                 <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
                   <Grid item xs={4}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.65rem' }}>
                       Match Accuracy
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#15243b', fontSize: '0.88rem' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.88rem' }}>
                       94.2%
                     </Typography>
                   </Grid>
                   <Grid item xs={4}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.65rem' }}>
                       Dispatch Velocity
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#15243b', fontSize: '0.88rem' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.88rem' }}>
                       &lt; 2.5s
                     </Typography>
                   </Grid>
                   <Grid item xs={4}>
-                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', fontSize: '0.65rem' }}>
                       Ready Staff
                     </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#15243b', fontSize: '0.88rem' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.88rem' }}>
                       {technicians.filter((t) => t.available).length} / {technicians.length}
                     </Typography>
                   </Grid>
@@ -259,14 +260,14 @@ export default function AdminDashboard() {
                 {/* Mini Category Distribution Bar */}
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
-                    <Typography variant="caption" sx={{ color: '#64748b', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
                       Recent Queue Distribution
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.65rem' }}>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.65rem' }}>
                       Last 10 Tickets
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', bgcolor: '#e2e8f0' }}>
+                  <Box sx={{ display: 'flex', height: 6, borderRadius: 3, overflow: 'hidden', bgcolor: 'divider' }}>
                     <Tooltip title="Network: 40%"><Box sx={{ width: '40%', bgcolor: '#4f85c8' }} /></Tooltip>
                     <Tooltip title="Hardware: 30%"><Box sx={{ width: '30%', bgcolor: '#10b981' }} /></Tooltip>
                     <Tooltip title="Software: 20%"><Box sx={{ width: '20%', bgcolor: '#8b5cf6' }} /></Tooltip>
@@ -282,12 +283,12 @@ export default function AdminDashboard() {
               </Box>
             </Box>
 
-            <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 1 }}>
+            <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1 }}>
               <Button
                 size="small"
                 variant="outlined"
                 onClick={() => navigate('/admin/sla-monitoring')}
-                sx={{ fontSize: '0.75rem', borderColor: '#cbd5e1', color: '#475569', textTransform: 'none', fontWeight: 600 }}
+                sx={{ fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', textTransform: 'none', fontWeight: 600 }}
               >
                 SLA Compliance
               </Button>
@@ -295,7 +296,7 @@ export default function AdminDashboard() {
                 size="small"
                 variant="outlined"
                 onClick={() => navigate('/admin/audit')}
-                sx={{ fontSize: '0.75rem', borderColor: '#cbd5e1', color: '#475569', textTransform: 'none', fontWeight: 600 }}
+                sx={{ fontSize: '0.75rem', borderColor: 'divider', color: 'text.secondary', textTransform: 'none', fontWeight: 600 }}
               >
                 Audit Trail
               </Button>
@@ -310,8 +311,9 @@ export default function AdminDashboard() {
             sx={{
               p: 2.5,
               borderRadius: '10px',
-              border: '1px solid #e2e8f0',
-              bgcolor: '#ffffff',
+              border: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'background.paper',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -331,7 +333,7 @@ export default function AdminDashboard() {
                 </Button>
               </Box>
 
-              <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.82rem', mb: 2 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.82rem', mb: 2 }}>
                 Active ticket allocation across available support specialists (max 5 capacity).
               </Typography>
 
@@ -349,16 +351,17 @@ export default function AdminDashboard() {
                       sx={{
                         p: 1.4,
                         borderRadius: '8px',
-                        bgcolor: '#f8fafc',
-                        border: '1px solid #edf0f4',
+                        bgcolor: 'action.hover',
+                        border: '1px solid',
+                        borderColor: 'divider',
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
                         <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.82rem', color: '#1e293b' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.82rem', color: 'text.primary' }}>
                             {tech.user?.fullName || tech.user?.username}
                           </Typography>
-                          <Typography variant="caption" sx={{ color: '#64748b' }}>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {tech.specialization || 'General IT Specialist'}
                           </Typography>
                         </Box>
@@ -387,7 +390,7 @@ export default function AdminDashboard() {
                         sx={{
                           height: 6,
                           borderRadius: 3,
-                          bgcolor: '#e2e8f0',
+                          bgcolor: 'divider',
                           '& .MuiLinearProgress-bar': {
                             bgcolor: isNearCap ? '#ef4444' : isModerate ? '#f59e0b' : '#10b981',
                             borderRadius: 3,
@@ -400,8 +403,8 @@ export default function AdminDashboard() {
               </Box>
             </Box>
 
-            <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+            <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                 Total Active Specialists: {technicians.length}
               </Typography>
               <Typography variant="caption" sx={{ color: '#059669', fontWeight: 600 }}>

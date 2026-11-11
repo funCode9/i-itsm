@@ -1,8 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeModeProvider } from './context/ThemeModeContext';
 
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
@@ -30,99 +29,6 @@ import AuditPage from './pages/admin/AuditPage';
 import SlaMonitoringPage from './pages/admin/SlaMonitoringPage';
 import TechniciansPage from './pages/admin/TechniciansPage';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#15243b',
-      light: '#273a56',
-      dark: '#0f1a2b',
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: '#4f85c8',
-      light: '#72a0db',
-      dark: '#3466a3',
-      contrastText: '#ffffff',
-    },
-    background: {
-      default: '#f4f6fa',
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#1e293b',
-      secondary: '#64748b',
-    },
-    success: { main: '#10b981' },
-    warning: { main: '#f59e0b' },
-    error: { main: '#ef4444' },
-    info: { main: '#3b82f6' },
-  },
-  typography: {
-    fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    h1: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, letterSpacing: '-0.02em' },
-    h2: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, letterSpacing: '-0.02em' },
-    h3: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 600, letterSpacing: '-0.02em' },
-    h4: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 600, letterSpacing: '-0.01em' },
-    h5: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 600, letterSpacing: '-0.01em' },
-    h6: { fontFamily: '"Space Grotesk", sans-serif', fontWeight: 600 },
-    subtitle1: { fontWeight: 500 },
-    subtitle2: { fontWeight: 500, color: '#64748b' },
-    button: { textTransform: 'none', fontWeight: 600 },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 7,
-          fontWeight: 600,
-          boxShadow: 'none',
-          '&:hover': {
-            boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-          },
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: 10,
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.04)',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 600,
-          borderRadius: 6,
-        },
-      },
-    },
-    MuiTableCell: {
-      styleOverrides: {
-        head: {
-          fontWeight: 600,
-          color: '#64748b',
-          backgroundColor: '#f8fafc',
-          borderBottom: '1px solid #e2e8f0',
-          fontSize: '0.8rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.04em',
-        },
-        root: {
-          borderBottom: '1px solid #f1f5f9',
-          padding: '12px 16px',
-        },
-      },
-    },
-  },
-});
-
 function ProtectedRoute({ children, allowedRoles }) {
   const { user, loading } = useAuth();
   if (loading) return null;
@@ -143,8 +49,7 @@ function RoleRouter() {
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeModeProvider>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
@@ -243,6 +148,6 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    </ThemeProvider>
+    </ThemeModeProvider>
   );
 }

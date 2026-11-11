@@ -20,15 +20,16 @@ export default function MetricCard({
       sx={{
         p: 2.2,
         borderRadius: '10px',
-        border: '1px solid #e2e8f0',
-        bgcolor: '#ffffff',
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease-in-out',
         '&:hover': onClick
           ? {
               transform: 'translateY(-2px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-              borderColor: '#cbd5e1',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+              borderColor: 'text.secondary',
             }
           : {},
       }}
@@ -69,7 +70,7 @@ export default function MetricCard({
           sx={{
             fontFamily: 'Space Grotesk, sans-serif',
             fontWeight: 700,
-            color: '#15243b',
+            color: 'text.primary',
             letterSpacing: '-0.02em',
             lineHeight: 1.1,
           }}

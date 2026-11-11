@@ -24,6 +24,18 @@
   --sla-breach: #ef4444;
 }
 
+[data-theme='dark'] {
+  --color-bg-main: #0b1320;
+  --color-card-border: #1e2e47;
+  --color-brand-surface: #111c2e;
+}
+
+[data-theme='dark'] html,
+[data-theme='dark'] body {
+  background-color: #0b1320;
+  color: #f1f5f9;
+}
+
 * {
   margin: 0;
   padding: 0;
