@@ -117,4 +117,13 @@ public class Incident {
 
     @Builder.Default
     private boolean potentialDuplicate = false;
+
+    @Builder.Default
+    private boolean escalated = false;
+
+    @Builder.Default
+    private Integer escalationLevel = 0;
+
+    @Column(length = 1000)
+    private String escalationReason;
 }

@@ -10,6 +10,9 @@ import com.itsm.backend.service.IncidentService;
 import com.itsm.backend.service.IncidentNoteService;
 import com.itsm.backend.service.intelligence.CategorySuggestionService;
 import com.itsm.backend.service.intelligence.DuplicateDetectionService;
+import com.itsm.backend.service.intelligence.SlaPredictionService;
+import com.itsm.backend.service.intelligence.RootCauseAnalysisService;
+import com.itsm.backend.service.escalation.IncidentEscalationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +31,9 @@ public class IncidentController {
     private final IncidentNoteService noteService;
     private final CategorySuggestionService categorySuggestionService;
     private final DuplicateDetectionService duplicateDetectionService;
+    private final SlaPredictionService slaPredictionService;
+    private final IncidentEscalationService incidentEscalationService;
+    private final RootCauseAnalysisService rootCauseAnalysisService;
     private final UserRepository userRepository;
 
     @PostMapping
@@ -127,6 +133,27 @@ public class IncidentController {
     public ResponseEntity<List<Incident>> getMyIncidents(Authentication auth) {
         User user = getUser(auth);
         return ResponseEntity.ok(incidentService.getIncidentsByReporter(user.getId()));
+    }
+
+    @GetMapping("/{id}/sla-prediction")
+    public ResponseEntity<SlaPredictionDTO> getSlaPrediction(@PathVariable Long id) {
+        return ResponseEntity.ok(slaPredictionService.predictForIncident(id));
+    }
+
+    @PostMapping("/{id}/escalate")
+    public ResponseEntity<Incident> escalateIncident(@PathVariable Long id,
+                                                      @RequestBody(required = false) Map<String, String> body,
+                                                      Authentication auth) {
+        User user = getUser(auth);
+        String reason = (body != null && body.containsKey("reason"))
+                ? body.get("reason")
+                : "Manual escalation initiated by " + user.getFullName();
+        return ResponseEntity.ok(incidentEscalationService.escalateIncident(id, reason, user));
+    }
+
+    @GetMapping("/{id}/root-cause")
+    public ResponseEntity<RootCauseAnalysisDTO> getRootCauseAnalysis(@PathVariable Long id) {
+        return ResponseEntity.ok(rootCauseAnalysisService.analyzeIncident(id));
     }
 
     private User getUser(Authentication auth) {

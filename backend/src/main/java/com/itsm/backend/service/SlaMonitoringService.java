@@ -4,6 +4,7 @@ import com.itsm.backend.domain.entity.*;
 import com.itsm.backend.domain.enums.SlaStatus;
 import com.itsm.backend.domain.enums.NotificationType;
 import com.itsm.backend.repository.*;
+import com.itsm.backend.service.escalation.IncidentEscalationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,6 +28,7 @@ public class SlaMonitoringService {
     private final IncidentSlaRepository incidentSlaRepository;
     private final NotificationRepository notificationRepository;
     private final EmailLogRepository emailLogRepository;
+    private final IncidentEscalationService incidentEscalationService;
 
     /** Run every 60 seconds */
     @Scheduled(fixedDelay = 60000)
@@ -57,6 +59,8 @@ public class SlaMonitoringService {
                         incidentSlaRepository.save(sla);
                     }
                     sendSlaWarningNotification(sla, incident, true);
+                    // Trigger automated incident escalation
+                    incidentEscalationService.autoEscalateOnBreach(incident, "Resolution deadline breached under " + sla.getPolicy().getPriority() + " policy");
                 }
             }
         }

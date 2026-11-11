@@ -24,6 +24,9 @@ export const incidentAPI = {
   suggestCategory: (title, description) =>
     api.get('/incidents/suggest-category', { params: { title, description } }),
   checkDuplicates: (params) => api.get('/incidents/check-duplicates', { params }),
+  getSlaPrediction: (id) => api.get(`/incidents/${id}/sla-prediction`),
+  escalate: (id, reason = null) => api.post(`/incidents/${id}/escalate`, reason ? { reason } : {}),
+  getRootCause: (id) => api.get(`/incidents/${id}/root-cause`),
 };
 
 export const technicianAPI = {
@@ -91,6 +94,8 @@ export const adminAPI = {
   getByService: () => api.get('/admin/reports/by-service'),
   getSlaAll: () => api.get('/admin/sla/all'),
   getSlaBreached: () => api.get('/admin/sla/breached'),
+  getSlaPredictions: () => api.get('/admin/sla/predictions'),
+  getSlaAtRisk: () => api.get('/admin/sla/at-risk'),
   getAudit: () => api.get('/admin/audit'),
   getEmailLogs: () => api.get('/admin/audit/emails'),
 };

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   Grid, Paper, Typography, Box, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Chip, Button
+  TableHead, TableRow, Chip, Button, LinearProgress
 } from '@mui/material';
 import {
   SpeedOutlined, WarningAmberOutlined, CheckCircleOutline,
-  TimerOutlined, RefreshOutlined
+  TimerOutlined, RefreshOutlined, TrendingUpOutlined, PsychologyOutlined
 } from '@mui/icons-material';
 import Layout from '../../components/Layout';
 import MetricCard from '../../components/MetricCard';
@@ -15,6 +15,7 @@ import { adminApi, incidentApi } from '../../api';
 export default function SlaMonitoringPage() {
   const [records, setRecords] = useState([]);
   const [breaches, setBreaches] = useState([]);
+  const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState(null);
 
@@ -23,6 +24,7 @@ export default function SlaMonitoringPage() {
     Promise.all([
       adminApi.getSlaAll().then((res) => setRecords(res.data || [])).catch(() => {}),
       adminApi.getSlaBreached().then((res) => setBreaches(res.data || [])).catch(() => {}),
+      adminApi.getSlaPredictions().then((res) => setPredictions(res.data || [])).catch(() => {}),
     ]).finally(() => setLoading(false));
   };
 
@@ -52,8 +54,8 @@ export default function SlaMonitoringPage() {
       }
     >
       {/* Metric Grid */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={3}>
           <MetricCard
             title="Tracked SLA Records"
             value={records.length}
@@ -63,7 +65,7 @@ export default function SlaMonitoringPage() {
             bgColor="#eff6ff"
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
           <MetricCard
             title="SLA Breaches"
             value={breaches.length}
@@ -73,7 +75,17 @@ export default function SlaMonitoringPage() {
             bgColor="#fef2f2"
           />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid item xs={12} sm={3}>
+          <MetricCard
+            title="At-Risk Predictions"
+            value={predictions.filter((p) => (p.riskLevel === 'HIGH' || p.riskLevel === 'CRITICAL') && !p.breached).length}
+            subtitle="AI predictive violation warnings"
+            icon={<TrendingUpOutlined fontSize="small" />}
+            color="#ea580c"
+            bgColor="#fffaf0"
+          />
+        </Grid>
+        <Grid item xs={12} sm={3}>
           <MetricCard
             title="Compliance Target"
             value="98.4%"
@@ -84,6 +96,132 @@ export default function SlaMonitoringPage() {
           />
         </Grid>
       </Grid>
+
+      {/* Predictive SLA Violation Detection Paper */}
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: '10px',
+          border: '1px solid #fed7aa',
+          bgcolor: '#ffffff',
+          overflow: 'hidden',
+          mb: 3.5,
+        }}
+      >
+        <Box sx={{ p: 2.2, borderBottom: '1px solid #ffedd5', bgcolor: '#fffaf0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUpOutlined sx={{ color: '#ea580c', fontSize: 20 }} />
+            <Box>
+              <Typography variant="h6" sx={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '1rem', color: '#9a3412' }}>
+                Predictive SLA Violation Telemetry
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#c2410c' }}>
+                Composite heuristic risk estimation based on time elapsed, stage inertia, and specialist workload
+              </Typography>
+            </Box>
+          </Box>
+          <Chip
+            label={`${predictions.filter((p) => p.riskLevel === 'CRITICAL' || p.riskLevel === 'HIGH').length} Elevated Risk`}
+            size="small"
+            sx={{ fontWeight: 700, fontSize: '0.68rem', bgcolor: '#ffedd5', color: '#c2410c' }}
+          />
+        </Box>
+
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: '#fffdfa' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Incident #</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Title</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Priority</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Stage</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Risk Score</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Elapsed</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem' }}>Recommended Pre-emptive Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {predictions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 3, color: '#94a3b8' }}>
+                    No predictive SLA telemetry records available.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                predictions.map((p) => (
+                  <TableRow
+                    key={p.incidentId}
+                    hover
+                    onClick={() => openDrawerForIncidentId(p.incidentId)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell sx={{ fontFamily: 'JetBrains Mono', fontWeight: 700, color: '#4f85c8' }}>
+                      {p.incidentNumber}
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.8rem', fontWeight: 600 }}>
+                      {p.title}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={p.priority}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.62rem',
+                          fontWeight: 700,
+                          bgcolor: p.priority === 'P1_CRITICAL' ? '#fee2e2' : p.priority === 'P2_HIGH' ? '#ffedd5' : '#f1f5f9',
+                          color: p.priority === 'P1_CRITICAL' ? '#b91c1c' : p.priority === 'P2_HIGH' ? '#c2410c' : '#475569',
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      {p.status}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip
+                          label={`${p.riskLevel} (${p.riskScore}%)`}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            bgcolor: p.riskLevel === 'CRITICAL' ? '#dc2626' : p.riskLevel === 'HIGH' ? '#ea580c' : p.riskLevel === 'MEDIUM' ? '#d97706' : '#16a34a',
+                            color: 'white',
+                          }}
+                        />
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ width: 140 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(100, p.elapsedPercentage)}
+                          sx={{
+                            flex: 1,
+                            height: 6,
+                            borderRadius: 3,
+                            bgcolor: '#f1f5f9',
+                            '& .MuiLinearProgress-bar': {
+                              bgcolor: p.riskScore >= 70 ? '#dc2626' : '#3b82f6',
+                            },
+                          }}
+                        />
+                        <Typography variant="caption" sx={{ fontSize: '0.68rem', fontWeight: 600, color: '#475569' }}>
+                          {p.elapsedPercentage}%
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontSize: '0.75rem', color: '#334155' }}>
+                      {p.recommendedAction}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Breached Incidents Paper */}
       <Paper

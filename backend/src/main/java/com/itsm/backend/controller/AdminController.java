@@ -6,6 +6,8 @@ import com.itsm.backend.domain.enums.Role;
 import com.itsm.backend.dto.CreateTechnicianRequest;
 import com.itsm.backend.repository.UserRepository;
 import com.itsm.backend.service.*;
+import com.itsm.backend.service.intelligence.SlaPredictionService;
+import com.itsm.backend.service.escalation.IncidentEscalationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +28,8 @@ public class AdminController {
     private final ReportService reportService;
     private final AuditService auditService;
     private final SlaMonitoringService slaMonitoringService;
+    private final SlaPredictionService slaPredictionService;
+    private final IncidentEscalationService incidentEscalationService;
     private final UserRepository userRepository;
 
     // ===== USER MANAGEMENT =====
@@ -122,5 +126,15 @@ public class AdminController {
     @GetMapping("/sla/breached")
     public ResponseEntity<?> getBreachedSla() {
         return ResponseEntity.ok(slaMonitoringService.getBreachedSlas());
+    }
+
+    @GetMapping("/sla/predictions")
+    public ResponseEntity<?> getSlaPredictions() {
+        return ResponseEntity.ok(slaPredictionService.getAllPredictions());
+    }
+
+    @GetMapping("/sla/at-risk")
+    public ResponseEntity<?> getAtRiskSla() {
+        return ResponseEntity.ok(slaPredictionService.getAtRiskIncidents());
     }
 }

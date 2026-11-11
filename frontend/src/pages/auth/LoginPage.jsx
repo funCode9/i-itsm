@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box, Paper, TextField, Button, Typography, Alert,
-  Link, CircularProgress, InputAdornment, IconButton, Chip
+  Link, CircularProgress, InputAdornment, IconButton
 } from '@mui/material';
 import { Visibility, VisibilityOff, LockOutlined, PersonOutline } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -38,12 +38,7 @@ export default function LoginPage() {
     }
   };
 
-  const fillQuickDemo = (username, password) => {
-    setForm({ username, password });
-    setError('');
-  };
-
-  return (
+return (
     <Box
       sx={{
         minHeight: '100vh',
@@ -95,7 +90,7 @@ export default function LoginPage() {
               letterSpacing: '-0.02em',
             }}
           >
-            I-ITSM Operations Console
+            I-ITSM
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mt: 0.5 }}>
             <span className="status-pulse" />
@@ -180,34 +175,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* 1-Click Demo Accounts */}
-        <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid #edf0f4' }}>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', mb: 1, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-            Quick Demo Autofill Credentials:
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
-            <Chip
-              label="Admin (admin)"
-              size="small"
-              onClick={() => fillQuickDemo('admin', 'Admin@123')}
-              sx={{ bgcolor: '#eff6ff', color: '#1e40af', fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer' }}
-            />
-            <Chip
-              label="Tech: Alex (tech_alex)"
-              size="small"
-              onClick={() => fillQuickDemo('tech_alex', 'Tech@123')}
-              sx={{ bgcolor: '#f0fdf4', color: '#166534', fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer' }}
-            />
-            <Chip
-              label="Employee: Alice (alice)"
-              size="small"
-              onClick={() => fillQuickDemo('alice', 'Emp@123')}
-              sx={{ bgcolor: '#fef3c7', color: '#92400e', fontWeight: 600, fontSize: '0.72rem', cursor: 'pointer' }}
-            />
-          </Box>
-        </Box>
-
-        <Typography variant="body2" sx={{ mt: 2.5, textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
+<Typography variant="body2" sx={{ mt: 2.5, textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
           Need a new employee account?{' '}
           <Link
             component="button"
