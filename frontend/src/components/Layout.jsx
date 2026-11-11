@@ -58,10 +58,7 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
                 separator={<NavigateNext fontSize="inherit" sx={{ color: '#94a3b8' }} />}
                 sx={{ fontSize: '0.75rem', mb: 0.3 }}
               >
-                <Typography color="text.secondary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                  I-ITSM Console
-                </Typography>
-                {breadcrumbs.map((crumb, idx) => (
+                {(breadcrumbs.length > 0 ? breadcrumbs : ['Dashboard']).map((crumb, idx) => (
                   <Typography key={idx} color="text.secondary" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
                     {crumb}
                   </Typography>
@@ -85,12 +82,12 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
               </Typography>
             </Box>
 
-            {/* Strategy Indicator Badge (Admin) */}
+            {/* Routing Indicator Badge (Admin) */}
             {strategy && (
-              <Tooltip title="Current Assignment Strategy Engine">
+              <Tooltip title="Active Auto-Assignment Rule">
                 <Chip
                   icon={<TuneOutlined sx={{ fontSize: '14px !important', color: '#4f85c8' }} />}
-                  label={`Strategy: ${strategy.replace('_', ' ')}`}
+                  label={`Routing: ${strategy === 'SKILL_BASED' ? 'Skill-Based' : 'Workload-Balanced'}`}
                   size="small"
                   sx={{
                     bgcolor: '#eff6ff',

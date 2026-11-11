@@ -1,5 +1,6 @@
 import React from 'react';
 import { Paper, Box, Typography } from '@mui/material';
+import { ArrowUpward, ArrowDownward, Remove } from '@mui/icons-material';
 
 export default function MetricCard({
   title,
@@ -9,6 +10,7 @@ export default function MetricCard({
   color = '#4f85c8',
   bgColor = '#eff6ff',
   badge,
+  trend, // { text: '+12%', label: 'vs last week', isFavorable: true, neutral: false }
   onClick,
 }) {
   return (
@@ -81,19 +83,55 @@ export default function MetricCard({
         )}
       </Box>
 
-      {subtitle && (
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#94a3b8',
-            fontSize: '0.72rem',
-            mt: 0.8,
-            display: 'block',
-          }}
-        >
-          {subtitle}
-        </Typography>
-      )}
+      {/* Trend indicator & Subtitle */}
+      <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.8 }}>
+        {trend && (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.3,
+              px: 0.8,
+              py: 0.2,
+              borderRadius: '4px',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              bgcolor: trend.neutral
+                ? '#f1f5f9'
+                : trend.isFavorable
+                ? '#ecfdf5'
+                : '#fef2f2',
+              color: trend.neutral
+                ? '#64748b'
+                : trend.isFavorable
+                ? '#059669'
+                : '#dc2626',
+            }}
+          >
+            {trend.neutral ? (
+              <Remove sx={{ fontSize: 11 }} />
+            ) : trend.direction === 'down' ? (
+              <ArrowDownward sx={{ fontSize: 11 }} />
+            ) : (
+              <ArrowUpward sx={{ fontSize: 11 }} />
+            )}
+            <span>{trend.text}</span>
+          </Box>
+        )}
+
+        {subtitle && (
+          <Typography
+            variant="caption"
+            sx={{
+              color: '#94a3b8',
+              fontSize: '0.72rem',
+              lineHeight: 1.2,
+            }}
+          >
+            {trend?.label ? trend.label : subtitle}
+          </Typography>
+        )}
+      </Box>
     </Paper>
   );
 }
