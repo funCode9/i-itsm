@@ -10,13 +10,16 @@ import {
   TuneOutlined,
   NavigateNext,
   DarkModeOutlined,
-  LightModeOutlined
+  LightModeOutlined,
+  AutoAwesome
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import AiConfigModal from './AiConfigModal';
+import AiChatbotWidget from './AiChatbotWidget';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeModeContext';
-import { notificationApi, adminApi } from '../api';
+import { notificationApi, adminApi, aiApi } from '../api';
 
 export default function Layout({ title, breadcrumbs = [], actions, children }) {
   const navigate = useNavigate();
@@ -25,8 +28,16 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
   const { mode, toggleTheme } = useThemeMode();
   const [unreadCount, setUnreadCount] = useState(0);
   const [strategy, setStrategy] = useState(null);
+  const [aiConfigOpen, setAiConfigOpen] = useState(false);
+  const [aiStatus, setAiStatus] = useState(null);
+
+  const fetchAiStatus = () => {
+    aiApi.getStatus().then((res) => setAiStatus(res.data)).catch(() => {});
+  };
 
   useEffect(() => {
+    fetchAiStatus();
+
     // Fetch unread notifications
     notificationApi.getUnread().then((res) => {
       setUnreadCount(Array.isArray(res.data) ? res.data.length : 0);
@@ -130,6 +141,32 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
             {/* Custom page actions */}
             {actions}
 
+            {/* AI Engine Status & Settings Chip */}
+            <Tooltip title="Configure Gemini API Key / View AI Status">
+              <Chip
+                icon={<AutoAwesome sx={{ fontSize: '15px !important', color: aiStatus?.configured ? '#10b981' : '#f59e0b' }} />}
+                label={aiStatus?.configured ? 'Gemini Live' : 'AI Copilot'}
+                size="small"
+                onClick={() => setAiConfigOpen(true)}
+                sx={{
+                  cursor: 'pointer',
+                  bgcolor: aiStatus?.configured ? '#ecfdf5' : '#fffbeb',
+                  color: aiStatus?.configured ? '#065f46' : '#92400e',
+                  border: '1px solid',
+                  borderColor: aiStatus?.configured ? '#a7f3d0' : '#fde68a',
+                  fontWeight: 700,
+                  fontSize: '0.73rem',
+                  height: 28,
+                  px: 0.5,
+                  '&:hover': {
+                    bgcolor: aiStatus?.configured ? '#d1fae5' : '#fef3c7',
+                    transform: 'translateY(-1px)'
+                  },
+                  transition: 'all 0.15s ease'
+                }}
+              />
+            </Tooltip>
+
             {/* Theme Mode Toggle (Light/Dark) */}
             <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
               <IconButton
@@ -181,6 +218,16 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
           {children}
         </Box>
       </Box>
+
+      {/* Gemini AI Config Modal */}
+      <AiConfigModal
+        open={aiConfigOpen}
+        onClose={() => setAiConfigOpen(false)}
+        onConfigSaved={fetchAiStatus}
+      />
+
+      {/* Floating AI Virtual Desk Chatbot */}
+      <AiChatbotWidget />
     </Box>
   );
 }

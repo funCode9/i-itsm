@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { StatusChip, PriorityChip } from './StatusChip';
+import AiResolutionCard from './AiResolutionCard';
 import { incidentApi, feedbackApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -615,6 +616,10 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
             )}
           </Collapse>
         </Box>
+
+        {/* AI Resolution Playbook (Gemini / Heuristic Engine) */}
+        <AiResolutionCard incidentId={incident.id} onNoteAdded={onRefresh} />
+
         <Box
           sx={{
             p: 2,

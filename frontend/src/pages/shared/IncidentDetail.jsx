@@ -10,6 +10,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { StatusChip, PriorityChip } from '../../components/StatusChip';
+import AiResolutionCard from '../../components/AiResolutionCard';
 import { incidentApi, auditApi, feedbackApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -446,6 +447,9 @@ export default function IncidentDetail() {
           )}
         </Box>
       </Paper>
+
+      {/* AI Resolution Playbook (Gemini / Heuristic Engine) */}
+      <AiResolutionCard incidentId={incident.id} onNoteAdded={loadData} />
 
       {/* Tabs: Notes & Activity, Audit Trail, Service Feedback */}
       <Paper

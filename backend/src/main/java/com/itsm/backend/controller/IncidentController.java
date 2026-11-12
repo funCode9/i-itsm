@@ -12,6 +12,7 @@ import com.itsm.backend.service.intelligence.CategorySuggestionService;
 import com.itsm.backend.service.intelligence.DuplicateDetectionService;
 import com.itsm.backend.service.intelligence.SlaPredictionService;
 import com.itsm.backend.service.intelligence.RootCauseAnalysisService;
+import com.itsm.backend.service.intelligence.GeminiResolutionService;
 import com.itsm.backend.service.escalation.IncidentEscalationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class IncidentController {
     private final SlaPredictionService slaPredictionService;
     private final IncidentEscalationService incidentEscalationService;
     private final RootCauseAnalysisService rootCauseAnalysisService;
+    private final GeminiResolutionService geminiResolutionService;
     private final UserRepository userRepository;
 
     @PostMapping
@@ -154,6 +156,18 @@ public class IncidentController {
     @GetMapping("/{id}/root-cause")
     public ResponseEntity<RootCauseAnalysisDTO> getRootCauseAnalysis(@PathVariable Long id) {
         return ResponseEntity.ok(rootCauseAnalysisService.analyzeIncident(id));
+    }
+
+    @GetMapping("/{id}/ai-resolution")
+    public ResponseEntity<GeminiResolutionDTO> getAiResolution(@PathVariable Long id) {
+        return ResponseEntity.ok(geminiResolutionService.generateRecommendation(id));
+    }
+
+    @PostMapping("/{id}/ai-resolution/apply-note")
+    public ResponseEntity<IncidentNote> applyAiResolutionAsNote(@PathVariable Long id,
+                                                                 Authentication auth) {
+        User user = getUser(auth);
+        return ResponseEntity.ok(geminiResolutionService.applyRecommendationAsNote(id, user.getId()));
     }
 
     private User getUser(Authentication auth) {

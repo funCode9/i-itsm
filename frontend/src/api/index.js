@@ -27,6 +27,8 @@ export const incidentAPI = {
   getSlaPrediction: (id) => api.get(`/incidents/${id}/sla-prediction`),
   escalate: (id, reason = null) => api.post(`/incidents/${id}/escalate`, reason ? { reason } : {}),
   getRootCause: (id) => api.get(`/incidents/${id}/root-cause`),
+  getAiResolution: (id) => api.get(`/incidents/${id}/ai-resolution`),
+  applyAiResolutionNote: (id) => api.post(`/incidents/${id}/ai-resolution/apply-note`),
 };
 
 export const technicianAPI = {
@@ -105,6 +107,14 @@ export const userAPI = {
   updateMe: (data) => api.put('/users/me', data),
 };
 
+export const aiAPI = {
+  getStatus: () => api.get('/ai/status'),
+  setApiKey: (apiKey) => api.post('/ai/config/key', { apiKey }),
+  testConnection: () => api.post('/ai/test'),
+  chat: (data) => api.post('/ai/chat', data),
+  submitDraftTicket: (data) => api.post('/ai/chat/submit', data),
+};
+
 // Convenient alias exports for both naming conventions
 export const authApi = authAPI;
 export const incidentApi = incidentAPI;
@@ -117,3 +127,4 @@ export const auditApi = auditAPI;
 export const slaPolicyApi = slaPolicyAPI;
 export const adminApi = adminAPI;
 export const userApi = userAPI;
+export const aiApi = aiAPI;
