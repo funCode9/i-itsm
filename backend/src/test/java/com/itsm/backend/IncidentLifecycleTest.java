@@ -24,6 +24,7 @@ class IncidentLifecycleTest {
         assertDoesNotThrow(() -> incidentService.validateTransition(IncidentStatus.ACKNOWLEDGED, IncidentStatus.IN_PROGRESS));
         assertDoesNotThrow(() -> incidentService.validateTransition(IncidentStatus.IN_PROGRESS, IncidentStatus.RESOLVED));
         assertDoesNotThrow(() -> incidentService.validateTransition(IncidentStatus.RESOLVED, IncidentStatus.VERIFIED));
+        assertDoesNotThrow(() -> incidentService.validateTransition(IncidentStatus.RESOLVED, IncidentStatus.CLOSED));
         assertDoesNotThrow(() -> incidentService.validateTransition(IncidentStatus.VERIFIED, IncidentStatus.CLOSED));
     }
 

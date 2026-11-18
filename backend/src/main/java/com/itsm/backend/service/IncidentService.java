@@ -48,7 +48,7 @@ public class IncidentService {
         IncidentStatus.ASSIGNED,    Set.of(IncidentStatus.ACKNOWLEDGED),
         IncidentStatus.ACKNOWLEDGED,Set.of(IncidentStatus.IN_PROGRESS),
         IncidentStatus.IN_PROGRESS, Set.of(IncidentStatus.RESOLVED),
-        IncidentStatus.RESOLVED,    Set.of(IncidentStatus.VERIFIED, IncidentStatus.IN_PROGRESS),
+        IncidentStatus.RESOLVED,    Set.of(IncidentStatus.VERIFIED, IncidentStatus.IN_PROGRESS, IncidentStatus.CLOSED),
         IncidentStatus.VERIFIED,    Set.of(IncidentStatus.CLOSED),
         IncidentStatus.CLOSED,      Set.of()
     );
