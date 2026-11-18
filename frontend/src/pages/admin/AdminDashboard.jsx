@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import MetricCard from '../../components/MetricCard';
+import TicketVolumeTrendChart from '../../components/TicketVolumeTrendChart';
 import IncidentQueueTable from '../../components/IncidentQueueTable';
 import IncidentDrawer from '../../components/IncidentDrawer';
 import { adminApi, incidentApi, technicianApi } from '../../api';
@@ -161,6 +162,9 @@ export default function AdminDashboard() {
           />
         </Grid>
       </Grid>
+
+      {/* Ticket Volume & Clearance Velocity Smooth Trend Chart */}
+      <TicketVolumeTrendChart incidents={incidents} />
 
       {/* Middle Row: Ticket Routing Logic & Visualized Technician Workload */}
       <Grid container spacing={3} sx={{ mb: 3.5 }}>
