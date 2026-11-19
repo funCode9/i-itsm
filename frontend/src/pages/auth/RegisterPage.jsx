@@ -4,6 +4,7 @@ import {
   Link, CircularProgress, Grid
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import AppLogo from '../../components/AppLogo';
 import { authApi } from '../../api';
 
 export default function RegisterPage() {
@@ -63,22 +64,8 @@ export default function RegisterPage() {
         }}
       >
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              bgcolor: '#15243b',
-              color: 'white',
-              display: 'inline-grid',
-              placeItems: 'center',
-              fontFamily: 'Space Grotesk',
-              fontWeight: 700,
-              fontSize: '1.4rem',
-              mb: 1.5,
-            }}
-          >
-            i
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>
+            <AppLogo size={52} variant="blue" />
           </Box>
           <Typography
             variant="h5"

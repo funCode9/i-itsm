@@ -1,4 +1,5 @@
 import React from 'react';
+import AppLogo from './AppLogo';
 import {
   Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
   Box, Typography, Avatar, Chip, IconButton, Tooltip, Divider
@@ -88,22 +89,7 @@ export default function Sidebar() {
       <Box sx={{ p: 2.5, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '8px',
-                bgcolor: '#4f85c8',
-                display: 'grid',
-                placeItems: 'center',
-                color: 'white',
-                fontWeight: 700,
-                fontSize: '1rem',
-                fontFamily: 'Space Grotesk, sans-serif',
-              }}
-            >
-              i
-            </Box>
+            <AppLogo size={32} variant="white" sx={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             <Typography
               variant="h6"
               sx={{
