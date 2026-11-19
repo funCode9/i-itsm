@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Box, Typography, TextField, MenuItem, Select, FormControl, InputLabel,
@@ -19,10 +19,21 @@ export default function IncidentQueueTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [serviceFilter, setServiceFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
 
-  // Filter incidents
+  // Extract distinct categories and services from dataset
+  const categories = useMemo(() => {
+    return Array.from(new Set(incidents.map((i) => i.category?.name).filter(Boolean))).sort();
+  }, [incidents]);
+
+  const services = useMemo(() => {
+    return Array.from(new Set(incidents.map((i) => i.service?.name).filter(Boolean))).sort();
+  }, [incidents]);
+
+  // Filter incidents across 5 distinct search and categorization criteria
   const filtered = incidents.filter((inc) => {
     const matchesSearch =
       !searchTerm ||
@@ -32,8 +43,10 @@ export default function IncidentQueueTable({
 
     const matchesStatus = statusFilter === 'ALL' || inc.status === statusFilter;
     const matchesPriority = priorityFilter === 'ALL' || inc.priority === priorityFilter;
+    const matchesCategory = categoryFilter === 'ALL' || inc.category?.name === categoryFilter;
+    const matchesService = serviceFilter === 'ALL' || inc.service?.name === serviceFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesService;
   });
 
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
@@ -141,6 +154,34 @@ export default function IncidentQueueTable({
             <MenuItem value="P3_MEDIUM">P3 Medium</MenuItem>
             <MenuItem value="P4_LOW">P4 Low</MenuItem>
           </Select>
+
+          {categories.length > 0 && (
+            <Select
+              size="small"
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              sx={{ fontSize: '0.78rem', height: 34, minWidth: 120 }}
+            >
+              <MenuItem value="ALL">All Categories</MenuItem>
+              {categories.map((c) => (
+                <MenuItem key={c} value={c}>{c}</MenuItem>
+              ))}
+            </Select>
+          )}
+
+          {services.length > 0 && (
+            <Select
+              size="small"
+              value={serviceFilter}
+              onChange={(e) => { setServiceFilter(e.target.value); setPage(1); }}
+              sx={{ fontSize: '0.78rem', height: 34, minWidth: 120 }}
+            >
+              <MenuItem value="ALL">All Services</MenuItem>
+              {services.map((s) => (
+                <MenuItem key={s} value={s}>{s}</MenuItem>
+              ))}
+            </Select>
+          )}
         </Box>
       </Box>
 

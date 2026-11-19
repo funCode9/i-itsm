@@ -2,8 +2,7 @@ package com.itsm.backend.service;
 
 import com.itsm.backend.domain.entity.ItService;
 import com.itsm.backend.domain.entity.Category;
-import com.itsm.backend.exception.DuplicateResourceException;
-import com.itsm.backend.exception.ResourceNotFoundException;
+import com.itsm.backend.exception.*;
 import com.itsm.backend.repository.ItServiceRepository;
 import com.itsm.backend.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +37,7 @@ public class ItServiceService {
     @Transactional(readOnly = true)
     public ItService getById(Long id) {
         return serviceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Service", id));
+                .orElseThrow(() -> new ServiceNotFoundException(id));
     }
 
     public ItService update(Long id, String name, String description, Long categoryId, boolean active) {

@@ -56,11 +56,22 @@ public class IncidentService {
     public Incident createIncident(String title, String description, Long reporterId,
                                     Long categoryId, Long serviceId,
                                     int impact, int urgency, int businessCriticality) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new InvalidInputException("Incident title is mandatory and cannot be blank");
+        }
+        if (description == null || description.trim().isEmpty()) {
+            throw new InvalidInputException("Incident description is mandatory and cannot be blank");
+        }
+        if (impact < 1 || impact > 3 || urgency < 1 || urgency > 3 || businessCriticality < 1 || businessCriticality > 3) {
+            throw new InvalidInputException("Priority factors (impact, urgency, business criticality) must be calibrated between 1 and 3");
+        }
+
         User reporter = userRepository.findById(reporterId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", reporterId));
 
         Category category = categoryId != null ? categoryRepository.findById(categoryId).orElse(null) : null;
-        ItService service = serviceId != null ? itServiceRepository.findById(serviceId).orElse(null) : null;
+        ItService service = serviceId != null ? itServiceRepository.findById(serviceId)
+                .orElseThrow(() -> new ServiceNotFoundException(serviceId)) : null;
 
         int score = PriorityEngine.computeScore(impact, urgency, businessCriticality);
         Priority priority = PriorityEngine.fromScore(score);
@@ -136,6 +147,15 @@ public class IncidentService {
         Technician technician = technicianRepository.findById(technicianId)
                 .orElseThrow(() -> new ResourceNotFoundException("Technician", technicianId));
 
+        if (!technician.isAvailable()) {
+            throw new TechnicianUnavailableException(technician.getId(), technician.getFullName());
+        }
+
+        long activeTickets = technicianRepository.countActiveIncidents(technicianId);
+        if (activeTickets >= 10) {
+            throw new TechnicianWorkloadExceededException(technician.getFullName(), activeTickets, 10);
+        }
+
         return doAssign(incident, technician, actor, true, null, "Manually assigned by admin");
     }
 
@@ -195,16 +215,17 @@ public class IncidentService {
     }
 
     private void createSlaRecord(Incident incident) {
-        slaPolicyRepository.findByPriority(incident.getPriority()).ifPresent(policy -> {
-            LocalDateTime base = incident.getCreatedAt() != null ? incident.getCreatedAt() : LocalDateTime.now();
-            IncidentSla sla = IncidentSla.builder()
-                    .incident(incident)
-                    .policy(policy)
-                    .responseDeadline(base.plusMinutes(policy.getResponseMinutes()))
-                    .resolutionDeadline(base.plusMinutes(policy.getResolutionMinutes()))
-                    .build();
-            incidentSlaRepository.save(sla);
-        });
+        SlaPolicy policy = slaPolicyRepository.findByPriority(incident.getPriority())
+                .orElseThrow(() -> new MissingSlaConfigurationException(incident.getPriority() != null ? incident.getPriority().name() : "UNKNOWN"));
+
+        LocalDateTime base = incident.getCreatedAt() != null ? incident.getCreatedAt() : LocalDateTime.now();
+        IncidentSla sla = IncidentSla.builder()
+                .incident(incident)
+                .policy(policy)
+                .responseDeadline(base.plusMinutes(policy.getResponseMinutes()))
+                .resolutionDeadline(base.plusMinutes(policy.getResolutionMinutes()))
+                .build();
+        incidentSlaRepository.save(sla);
     }
 
     private void updateSlaResponseTime(Incident incident) {
@@ -240,7 +261,7 @@ public class IncidentService {
     @Transactional(readOnly = true)
     public Incident getIncidentById(Long id) {
         return incidentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Incident", id));
+                .orElseThrow(() -> new InvalidIncidentException(id));
     }
 
     @Transactional(readOnly = true)
