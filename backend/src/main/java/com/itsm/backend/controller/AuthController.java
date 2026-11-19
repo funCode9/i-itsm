@@ -18,6 +18,11 @@ public class AuthController {
 
     private final AuthService authService;
 
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        return ResponseEntity.ok(Map.of("status", "UP", "service", "i-itsm-backend", "timestamp", System.currentTimeMillis()));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         User user = authService.register(req.getUsername(), req.getEmail(), req.getPassword(),
