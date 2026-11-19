@@ -87,7 +87,7 @@ export default function Sidebar() {
     >
       {/* Brand Header */}
       <Box sx={{ p: 2.5, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
             <AppLogo size={32} variant="white" sx={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
             <Typography
@@ -101,12 +101,6 @@ export default function Sidebar() {
               }}
             >
               I-ITSM
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-            <span className="status-pulse" />
-            <Typography variant="caption" sx={{ color: '#10b981', fontSize: '0.68rem', fontWeight: 600 }}>
-              LIVE
             </Typography>
           </Box>
         </Box>
