@@ -274,22 +274,27 @@ export default function IncidentQueueTable({
 
                   {/* Assignee */}
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          fontSize: '0.7rem',
-                          bgcolor: inc.assignee ? '#4f85c8' : '#e2e8f0',
-                          color: inc.assignee ? 'white' : '#64748b',
-                        }}
-                      >
-                        {inc.assignee?.user?.fullName?.[0] || <PersonOutline sx={{ fontSize: 14 }} />}
-                      </Avatar>
-                      <Typography variant="body2" sx={{ fontSize: '0.78rem', color: '#334155', fontWeight: 500 }}>
-                        {inc.assignee?.user?.fullName || 'Unassigned'}
-                      </Typography>
-                    </Box>
+                    {(() => {
+                      const tech = inc.assignedTechnician || inc.assignee;
+                      return (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Avatar
+                            sx={{
+                              width: 24,
+                              height: 24,
+                              fontSize: '0.7rem',
+                              bgcolor: tech ? '#4f85c8' : '#e2e8f0',
+                              color: tech ? 'white' : '#64748b',
+                            }}
+                          >
+                            {tech?.user?.fullName?.[0] || tech?.fullName?.[0] || <PersonOutline sx={{ fontSize: 14 }} />}
+                          </Avatar>
+                          <Typography variant="body2" sx={{ fontSize: '0.78rem', color: '#334155', fontWeight: 500 }}>
+                            {tech?.user?.fullName || tech?.fullName || 'Unassigned'}
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
                   </TableCell>
 
                   {/* SLA Countdown / Status */}

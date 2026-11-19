@@ -280,17 +280,22 @@ export default function IncidentDetail() {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: '6px', border: '1px solid #edf0f4' }}>
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                Assigned Specialist
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mt: 0.3 }}>
-                {incident.assignee?.user?.fullName || incident.assignee?.user?.username || 'Unassigned'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b' }}>
-                {incident.assignee?.specialization || 'Pending Auto-Assign'}
-              </Typography>
-            </Box>
+            {(() => {
+              const tech = incident.assignedTechnician || incident.assignee;
+              return (
+                <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: '6px', border: '1px solid #edf0f4' }}>
+                  <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                    Assigned Specialist
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', mt: 0.3 }}>
+                    {tech?.user?.fullName || tech?.fullName || tech?.user?.username || 'Unassigned'}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748b' }}>
+                    {tech?.specialization ? `${tech.specialization} Specialist` : (incident.status === 'NEW' ? 'Pending Auto-Assign' : 'General IT Support')}
+                  </Typography>
+                </Box>
+              );
+            })()}
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>

@@ -45,6 +45,21 @@ public class IncidentController {
         Incident incident = incidentService.createIncident(req.getTitle(), req.getDescription(),
                 user.getId(), req.getCategoryId(), req.getServiceId(),
                 req.getImpact(), req.getUrgency(), req.getBusinessCriticality());
+
+        // Automated Classification & Strategy Assignment Pipeline (Workflow 1: Report -> Prioritize -> Assign)
+        try {
+            Long effectiveCategoryId = req.getCategoryId();
+            if (effectiveCategoryId == null) {
+                effectiveCategoryId = categorySuggestionService.suggestCategory(req.getTitle(), req.getDescription())
+                        .map(com.itsm.backend.domain.entity.Category::getId)
+                        .orElse(null);
+            }
+            incident = incidentService.classifyAndAssign(incident.getId(), effectiveCategoryId,
+                    req.getServiceId(), req.getImpact(), req.getUrgency(), req.getBusinessCriticality(), user);
+        } catch (Exception ex) {
+            // If technician unavailable or strategy is unassigned, incident safely remains NEW for manual triaging
+        }
+
         return ResponseEntity.ok(incident);
     }
 

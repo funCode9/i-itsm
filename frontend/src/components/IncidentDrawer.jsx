@@ -636,26 +636,33 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
             mb: 3,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Avatar sx={{ bgcolor: '#4f85c8', width: 36, height: 36, fontSize: '0.85rem' }}>
-              <PersonOutline />
-            </Avatar>
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#15243b' }}>
-                {incident.assignee?.user?.fullName || incident.assignee?.user?.username || 'Unassigned'}
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
-                {incident.assignee?.specialization || 'Awaiting Strategy Assignment'}
-              </Typography>
-            </Box>
-          </Box>
-          {incident.assignee && (
-            <Chip
-              label="Assigned"
-              size="small"
-              sx={{ bgcolor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}
-            />
-          )}
+          {(() => {
+            const tech = incident.assignedTechnician || incident.assignee;
+            return (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar sx={{ bgcolor: tech ? '#4f85c8' : '#e2e8f0', color: tech ? 'white' : '#64748b', width: 36, height: 36, fontSize: '0.85rem' }}>
+                    <PersonOutline />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#15243b' }}>
+                      {tech?.user?.fullName || tech?.fullName || tech?.user?.username || 'Unassigned'}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b', display: 'block' }}>
+                      {tech?.specialization ? `${tech.specialization} Specialist` : (incident.status === 'NEW' ? 'Awaiting Strategy Assignment' : 'General IT Support')}
+                    </Typography>
+                  </Box>
+                </Box>
+                {tech && (
+                  <Chip
+                    label="Assigned"
+                    size="small"
+                    sx={{ bgcolor: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontWeight: 600 }}
+                  />
+                )}
+              </>
+            );
+          })()}
         </Box>
 
         {/* Lifecycle Action Buttons */}

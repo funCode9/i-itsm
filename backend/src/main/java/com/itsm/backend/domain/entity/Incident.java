@@ -126,4 +126,14 @@ public class Incident {
 
     @Column(length = 1000)
     private String escalationReason;
+
+    /** Alias getter for JSON compatibility with frontend expectations */
+    @com.fasterxml.jackson.annotation.JsonProperty("assignee")
+    public Technician getAssignee() {
+        return this.assignedTechnician;
+    }
+
+    public void setAssignee(Technician assignee) {
+        this.assignedTechnician = assignee;
+    }
 }
