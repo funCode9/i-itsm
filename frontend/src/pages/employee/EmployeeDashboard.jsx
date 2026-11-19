@@ -38,17 +38,6 @@ export default function EmployeeDashboard() {
     <Layout
       title="Employee Portal"
       breadcrumbs={['Dashboard']}
-      actions={
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddOutlined />}
-          onClick={() => navigate('/employee/report')}
-          sx={{ bgcolor: '#4f85c8', '&:hover': { bgcolor: '#3b70b0' } }}
-        >
-          Report Incident
-        </Button>
-      }
     >
       {/* Welcome Banner */}
       <Box sx={{ mb: 3 }}>

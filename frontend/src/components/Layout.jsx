@@ -106,8 +106,8 @@ export default function Layout({ title, breadcrumbs = [], actions, children }) {
               </Tooltip>
             )}
 
-            {/* Quick Action Button for Employee */}
-            {user?.role === 'EMPLOYEE' && location.pathname !== '/employee/report' && (
+            {/* Quick Action Button for Employee (only when page doesn't supply its own actions) */}
+            {!actions && user?.role === 'EMPLOYEE' && location.pathname !== '/employee/report' && (
               <Button
                 variant="contained"
                 size="small"

@@ -448,8 +448,10 @@ export default function IncidentDetail() {
         </Box>
       </Paper>
 
-      {/* AI Resolution Playbook (Gemini / Heuristic Engine) */}
-      <AiResolutionCard incidentId={incident.id} onNoteAdded={loadData} />
+      {/* AI Resolution Playbook (Technician Workbench Only) */}
+      {user?.role === 'TECHNICIAN' && (
+        <AiResolutionCard incidentId={incident.id} onNoteAdded={loadData} />
+      )}
 
       {/* Tabs: Notes & Activity, Audit Trail, Service Feedback */}
       <Paper

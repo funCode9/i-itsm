@@ -28,17 +28,6 @@ export default function MyIncidents() {
     <Layout
       title="My Incidents"
       breadcrumbs={['Incidents', 'My Queue']}
-      actions={
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddOutlined />}
-          onClick={() => navigate('/employee/report')}
-          sx={{ bgcolor: '#4f85c8', '&:hover': { bgcolor: '#3b70b0' } }}
-        >
-          Report Incident
-        </Button>
-      }
     >
       <IncidentQueueTable
         incidents={incidents}

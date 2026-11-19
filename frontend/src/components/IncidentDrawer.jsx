@@ -519,106 +519,110 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
           </Box>
         )}
 
-        {/* Automated Root-Cause Analysis (RCA) */}
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: '8px',
-            border: '1px solid #e0e7ff',
-            bgcolor: '#f5f7ff',
-            mb: 3,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PsychologyOutlined sx={{ fontSize: '18px', color: '#4f46e5' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.82rem', color: '#312e81' }}>
-                Automated Root-Cause Analysis (RCA)
-              </Typography>
-            </Box>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={handleRunRca}
-              disabled={rcaLoading}
-              startIcon={rcaLoading ? <CircularProgress size={12} color="inherit" /> : <AutoFixHighOutlined sx={{ fontSize: 14 }} />}
+        {/* Automated Root-Cause Analysis (RCA) & AI Playbook (Technician Workbench Only) */}
+        {user?.role === 'TECHNICIAN' && (
+          <>
+            <Box
               sx={{
-                fontSize: '0.68rem',
-                py: 0.2,
-                px: 1,
-                textTransform: 'none',
-                borderColor: '#c7d2fe',
-                color: '#4338ca',
-                bgcolor: '#ffffff',
-                '&:hover': { bgcolor: '#eef2ff' },
+                p: 2,
+                borderRadius: '8px',
+                border: '1px solid #e0e7ff',
+                bgcolor: '#f5f7ff',
+                mb: 3,
               }}
             >
-              {rca ? 'Re-analyze' : 'Run RCA'}
-            </Button>
-          </Box>
-
-          <Collapse in={Boolean(rca)}>
-            {rca && (
-              <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed #c7d2fe' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
-                  <Chip
-                    label={rca.domainClassification}
-                    size="small"
-                    sx={{ bgcolor: '#e0e7ff', color: '#3730a3', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
-                  />
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#059669', fontSize: '0.72rem' }}>
-                    Confidence: {rca.confidenceScore}%
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PsychologyOutlined sx={{ fontSize: '18px', color: '#4f46e5' }} />
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.82rem', color: '#312e81' }}>
+                    Automated Root-Cause Analysis (RCA)
                   </Typography>
                 </Box>
-
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e1b4b', fontSize: '0.82rem', mb: 0.5 }}>
-                  Probable Cause: {rca.probableRootCause}
-                </Typography>
-
-                {rca.evidenceKeywords?.length > 0 && (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
-                    {rca.evidenceKeywords.map((kw, i) => (
-                      <Chip key={i} label={kw} size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#ffffff', border: '1px solid #c7d2fe' }} />
-                    ))}
-                  </Box>
-                )}
-
-                {rca.recommendedWorkaround && (
-                  <Box sx={{ p: 1, bgcolor: '#ffffff', borderRadius: '4px', border: '1px solid #e2e8f0', mb: 1 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#b45309', display: 'block', fontSize: '0.68rem' }}>
-                      Recommended Workaround:
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#475569', fontSize: '0.72rem' }}>
-                      {rca.recommendedWorkaround}
-                    </Typography>
-                  </Box>
-                )}
-
-                {rca.remediationSteps?.length > 0 && (
-                  <Box sx={{ mt: 0.5 }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: '#312e81', display: 'block', fontSize: '0.68rem', mb: 0.3 }}>
-                      Remediation Plan:
-                    </Typography>
-                    {rca.remediationSteps.map((step, idx) => (
-                      <Typography key={idx} variant="caption" sx={{ color: '#334155', display: 'block', fontSize: '0.7rem', mb: 0.2 }}>
-                        {idx + 1}. {step}
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
-
-                {rca.correlationSummary && (
-                  <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6366f1', fontStyle: 'italic', fontSize: '0.68rem' }}>
-                    🔗 {rca.correlationSummary}
-                  </Typography>
-                )}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleRunRca}
+                  disabled={rcaLoading}
+                  startIcon={rcaLoading ? <CircularProgress size={12} color="inherit" /> : <AutoFixHighOutlined sx={{ fontSize: 14 }} />}
+                  sx={{
+                    fontSize: '0.68rem',
+                    py: 0.2,
+                    px: 1,
+                    textTransform: 'none',
+                    borderColor: '#c7d2fe',
+                    color: '#4338ca',
+                    bgcolor: '#ffffff',
+                    '&:hover': { bgcolor: '#eef2ff' },
+                  }}
+                >
+                  {rca ? 'Re-analyze' : 'Run RCA'}
+                </Button>
               </Box>
-            )}
-          </Collapse>
-        </Box>
 
-        {/* AI Resolution Playbook (Gemini / Heuristic Engine) */}
-        <AiResolutionCard incidentId={incident.id} onNoteAdded={onRefresh} />
+              <Collapse in={Boolean(rca)}>
+                {rca && (
+                  <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px dashed #c7d2fe' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.8 }}>
+                      <Chip
+                        label={rca.domainClassification}
+                        size="small"
+                        sx={{ bgcolor: '#e0e7ff', color: '#3730a3', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
+                      />
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#059669', fontSize: '0.72rem' }}>
+                        Confidence: {rca.confidenceScore}%
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e1b4b', fontSize: '0.82rem', mb: 0.5 }}>
+                      Probable Cause: {rca.probableRootCause}
+                    </Typography>
+
+                    {rca.evidenceKeywords?.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+                        {rca.evidenceKeywords.map((kw, i) => (
+                          <Chip key={i} label={kw} size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#ffffff', border: '1px solid #c7d2fe' }} />
+                        ))}
+                      </Box>
+                    )}
+
+                    {rca.recommendedWorkaround && (
+                      <Box sx={{ p: 1, bgcolor: '#ffffff', borderRadius: '4px', border: '1px solid #e2e8f0', mb: 1 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#b45309', display: 'block', fontSize: '0.68rem' }}>
+                          Recommended Workaround:
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#475569', fontSize: '0.72rem' }}>
+                          {rca.recommendedWorkaround}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {rca.remediationSteps?.length > 0 && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: '#312e81', display: 'block', fontSize: '0.68rem', mb: 0.3 }}>
+                          Remediation Plan:
+                        </Typography>
+                        {rca.remediationSteps.map((step, idx) => (
+                          <Typography key={idx} variant="caption" sx={{ color: '#334155', display: 'block', fontSize: '0.7rem', mb: 0.2 }}>
+                            {idx + 1}. {step}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+
+                    {rca.correlationSummary && (
+                      <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#6366f1', fontStyle: 'italic', fontSize: '0.68rem' }}>
+                        🔗 {rca.correlationSummary}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Collapse>
+            </Box>
+
+            {/* AI Resolution Playbook (Gemini / Heuristic Engine) */}
+            <AiResolutionCard incidentId={incident.id} onNoteAdded={onRefresh} />
+          </>
+        )}
 
         <Box
           sx={{
