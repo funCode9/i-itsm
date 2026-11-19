@@ -79,12 +79,6 @@ return (
           >
             I-ITSM
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8, mt: 0.5 }}>
-            <span className="status-pulse" />
-            <Typography variant="caption" sx={{ color: '#059669', fontWeight: 600, fontSize: '0.72rem' }}>
-              System Operational & Dispatch Ready
-            </Typography>
-          </Box>
         </Box>
 
         {error && (
