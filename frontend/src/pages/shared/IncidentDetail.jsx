@@ -5,9 +5,10 @@ import {
 } from '@mui/material';
 import {
   ArrowBack, SendOutlined, TimerOutlined, PersonOutline,
-  CheckCircle, HistoryEduOutlined, ForumOutlined, StarOutlined
+  CheckCircle, HistoryEduOutlined, ForumOutlined, StarOutlined,
+  WarningAmber, Bolt
 } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { StatusChip, PriorityChip } from '../../components/StatusChip';
 import AiResolutionCard from '../../components/AiResolutionCard';
@@ -23,6 +24,7 @@ export default function IncidentDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [incident, setIncident] = useState(null);
   const [notes, setNotes] = useState([]);
@@ -211,6 +213,48 @@ export default function IncidentDetail() {
         <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.6, mb: 3, whiteSpace: 'pre-wrap' }}>
           {incident.description}
         </Typography>
+
+        {/* Duplicate Correlated & Escalated Alert Banner */}
+        {location.state?.correlated && (
+          <Alert
+            severity="warning"
+            icon={<Bolt sx={{ color: '#ea580c', fontSize: 24 }} />}
+            sx={{
+              mb: 3,
+              borderRadius: '8px',
+              border: '1px solid #fed7aa',
+              bgcolor: '#fffbeb',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#9a3412', mb: 0.3 }}>
+              ⚡ Correlated Issue Detected — Existing Incident Escalated
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#7c2d12', fontSize: '0.85rem' }}>
+              Your report matches an active incident (<strong>{incident.incidentNumber}</strong>). Rather than creating a duplicate ticket and delaying response, the system has consolidated your report, escalated this incident's priority to <strong>{incident.priority}</strong> (Tier {incident.escalationLevel || 1}), and alerted the specialized engineering team.
+            </Typography>
+          </Alert>
+        )}
+
+        {/* General Escalation Banner (when viewed directly or after reload) */}
+        {!location.state?.correlated && incident.escalated && (
+          <Alert
+            severity="error"
+            icon={<WarningAmber sx={{ color: '#dc2626' }} />}
+            sx={{
+              mb: 3,
+              borderRadius: '8px',
+              border: '1px solid #fecaca',
+              bgcolor: '#fef2f2',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#991b1b', mb: 0.3 }}>
+              🚨 Escalated Incident (Tier {incident.escalationLevel || 1})
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#7f1d1d', fontSize: '0.85rem' }}>
+              {incident.escalationReason || 'Priority elevated due to multi-user report surge or SLA threshold breach.'}
+            </Typography>
+          </Alert>
+        )}
 
         {/* 8-Stage Lifecycle Bar */}
         <Box sx={{ mb: 3, p: 2, bgcolor: '#f8fafc', borderRadius: '8px', border: '1px solid #edf0f4' }}>

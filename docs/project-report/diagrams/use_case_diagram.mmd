@@ -1,0 +1,75 @@
+graph LR
+    subgraph Actors
+        Emp((Employee / Customer))
+        Tech((Technician / Support Engineer))
+        Admin((Administrator / IT Manager))
+        System((System / Background Scheduler))
+    end
+
+    subgraph UC_Emp ["Employee Use Cases"]
+        UC1["Register & Authenticate"]
+        UC2["Report Incident with Category & Impact"]
+        UC3["View & Track My Incidents"]
+        UC4["Chat with AI Support Assistant"]
+        UC5["Provide Resolution Feedback"]
+        UC6["Verify & Close Incident"]
+    end
+
+    subgraph UC_Tech ["Technician Use Cases"]
+        UC7["View Assigned Workload Queue"]
+        UC8["Acknowledge Assigned Incident"]
+        UC9["Add Investigation Notes"]
+        UC10["Inspect Root-Cause Analysis (RCA)"]
+        UC11["Apply AI Resolution Playbook"]
+        UC12["Resolve Incident with Resolution Details"]
+        UC13["Update Availability & Skills"]
+    end
+
+    subgraph UC_Admin ["Administrator Use Cases"]
+        UC14["Monitor Operations Health Console"]
+        UC15["Manage User & Technician Accounts"]
+        UC16["Configure Service Catalog & Categories"]
+        UC17["Configure SLA Policies & Thresholds"]
+        UC18["Switch Active Assignment Strategy"]
+        UC19["Inspect Immutable Audit Trail & Logs"]
+        UC20["Export Incident & SLA Compliance Reports"]
+    end
+
+    subgraph UC_Sys ["System / Automated Use Cases"]
+        UC21["Calculate Priority Score (1-27 -> P1..P4)"]
+        UC22["Auto-Assign Technician (Skill / Least-Loaded)"]
+        UC23["Dispatch In-App Notifications & Email Logs"]
+        UC24["Monitor SLA Deadlines & Flag Breaches"]
+        UC25["Auto-Escalate Critical Unacknowledged Tickets"]
+    end
+
+    Emp --> UC1
+    Emp --> UC2
+    Emp --> UC3
+    Emp --> UC4
+    Emp --> UC5
+    Emp --> UC6
+
+    Tech --> UC1
+    Tech --> UC7
+    Tech --> UC8
+    Tech --> UC9
+    Tech --> UC10
+    Tech --> UC11
+    Tech --> UC12
+    Tech --> UC13
+
+    Admin --> UC1
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    Admin --> UC17
+    Admin --> UC18
+    Admin --> UC19
+    Admin --> UC20
+
+    System --> UC21
+    System --> UC22
+    System --> UC23
+    System --> UC24
+    System --> UC25

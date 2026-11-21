@@ -40,6 +40,9 @@ public class IncidentService {
     private final IncidentSlaRepository incidentSlaRepository;
     private final AssignmentStrategyContext assignmentStrategyContext;
     private final ApplicationEventPublisher eventPublisher;
+    private final IncidentNoteService noteService;
+    private final NotificationRepository notificationRepository;
+    private final EmailLogRepository emailLogRepository;
 
     /** Valid state transitions for the incident lifecycle FSM */
     private static final Map<IncidentStatus, Set<IncidentStatus>> VALID_TRANSITIONS = Map.of(
@@ -289,11 +292,189 @@ public class IncidentService {
 
     private String generateUniqueNumber() {
         String number;
-        int attempts = 0;
         do {
             number = IncidentNumberGenerator.generate();
-            attempts++;
-        } while (incidentRepository.findByIncidentNumber(number).isPresent() && attempts < 10);
+        } while (incidentRepository.findByIncidentNumber(number).isPresent());
         return number;
+    }
+
+    /**
+     * Correlates duplicate / similar incidents and upgrades the priority of BOTH the existing
+     * incident(s) and the new duplicate incident (e.g., P3_MEDIUM -> P2_HIGH, P2_HIGH -> P1_CRITICAL).
+     */
+    public Incident correlateDuplicatesAndUpgradePriority(Incident newIncident, List<Incident> duplicates, User actor) {
+        if (duplicates == null || duplicates.isEmpty()) return newIncident;
+
+        Incident primaryCandidate = duplicates.get(0);
+        Incident rootPrimary = primaryCandidate.getDuplicateOf() != null ? primaryCandidate.getDuplicateOf() : primaryCandidate;
+
+        // 1. Link new incident to root primary
+        newIncident.setDuplicateOf(rootPrimary);
+        newIncident.setPotentialDuplicate(true);
+
+        // Inherit assigned technician from primary to streamline handling
+        if (rootPrimary.getAssignedTechnician() != null && newIncident.getAssignedTechnician() == null) {
+            newIncident.setAssignedTechnician(rootPrimary.getAssignedTechnician());
+            newIncident.setStatus(IncidentStatus.ASSIGNED);
+        }
+
+        // 2. Compute upgraded priority: bump rootPrimary's priority
+        Priority basePriority = rootPrimary.getPriority() != null ? rootPrimary.getPriority() : Priority.P3_MEDIUM;
+        Priority upgradedPriority = PriorityEngine.bumpPriority(basePriority);
+
+        // If new incident arrived with higher priority, respect the higher severity
+        if (newIncident.getPriority() != null && newIncident.getPriority().compareTo(upgradedPriority) < 0) {
+            upgradedPriority = newIncident.getPriority();
+        }
+
+        int newScore = PriorityEngine.scoreForPriority(upgradedPriority);
+
+        // 3. Upgrade rootPrimary and all existing duplicate tickets in the cluster
+        List<Incident> cluster = new ArrayList<>();
+        cluster.add(rootPrimary);
+        cluster.addAll(incidentRepository.findByDuplicateOfId(rootPrimary.getId()));
+
+        for (Incident existing : cluster) {
+            if (existing.getId().equals(newIncident.getId())) continue;
+
+            Priority prev = existing.getPriority();
+            existing.setPriority(upgradedPriority);
+            existing.setPriorityScore(newScore);
+            existing.setEscalated(true);
+            int level = existing.getEscalationLevel() != null ? existing.getEscalationLevel() + 1 : 1;
+            existing.setEscalationLevel(level);
+            existing.setImpact(Math.min(3, Math.max(existing.getImpact(), newIncident.getImpact()) + 1));
+            existing.setEscalationReason(String.format(
+                    "Duplicate outage surge: Concurrent report %s ('%s') received. Priority upgraded %s -> %s to reflect multi-user impact.",
+                    newIncident.getIncidentNumber(), newIncident.getTitle(), prev, upgradedPriority
+            ));
+            incidentRepository.save(existing);
+
+            // Update SLA policy and deadlines to match upgraded priority
+            updateSlaPolicyForUpgradedPriority(existing, upgradedPriority);
+
+            // Add investigation audit note
+            String noteText = String.format(
+                    "⚡ [AUTOMATED PRIORITY UPGRADE - DUPLICATE CLUSTER]\n" +
+                    "Similar incident %s ('%s') reported by %s.\n" +
+                    "Priority automatically upgraded: %s -> %s (Tier %d) due to multi-user impact.",
+                    newIncident.getIncidentNumber(), newIncident.getTitle(), actor.getFullName(),
+                    prev, upgradedPriority, level
+            );
+            try {
+                noteService.addNote(existing.getId(), actor.getId(), noteText, NoteType.INVESTIGATION, true);
+            } catch (Exception e) {
+                log.warn("Failed to attach note to incident {}: {}", existing.getIncidentNumber(), e.getMessage());
+            }
+
+            // Notify reporter & assigned technician
+            notifyPriorityUpgrade(existing, newIncident, prev, upgradedPriority);
+        }
+
+        // 4. Upgrade the NEW incident
+        Priority prevNew = newIncident.getPriority();
+        newIncident.setPriority(upgradedPriority);
+        newIncident.setPriorityScore(newScore);
+        newIncident.setEscalated(true);
+        newIncident.setEscalationLevel(1);
+        newIncident.setImpact(Math.min(3, Math.max(newIncident.getImpact(), rootPrimary.getImpact())));
+        newIncident.setEscalationReason(String.format(
+                "Correlated duplicate of %s ('%s'). Priority upgraded %s -> %s due to concurrent reports.",
+                rootPrimary.getIncidentNumber(), rootPrimary.getTitle(), prevNew, upgradedPriority
+        ));
+        newIncident = incidentRepository.save(newIncident);
+
+        // Update SLA policy for new incident
+        updateSlaPolicyForUpgradedPriority(newIncident, upgradedPriority);
+
+        // Add investigation audit note on new incident
+        String newNoteText = String.format(
+                "⚡ [CORRELATED DUPLICATE INCIDENT - PRIORITY UPGRADED]\n" +
+                "Correlated with active incident %s ('%s').\n" +
+                "Priority automatically upgraded: %s -> %s to expedite resolution.",
+                rootPrimary.getIncidentNumber(), rootPrimary.getTitle(),
+                prevNew, upgradedPriority
+        );
+        try {
+            noteService.addNote(newIncident.getId(), actor.getId(), newNoteText, NoteType.INVESTIGATION, true);
+        } catch (Exception e) {
+            log.warn("Failed to attach note to new incident {}: {}", newIncident.getIncidentNumber(), e.getMessage());
+        }
+
+        // Notify reporter of new incident
+        notifyPriorityUpgrade(newIncident, rootPrimary, prevNew, upgradedPriority);
+
+        log.info("Correlated incidents {} and {}. Both upgraded to priority {}",
+                rootPrimary.getIncidentNumber(), newIncident.getIncidentNumber(), upgradedPriority);
+
+        return newIncident;
+    }
+
+    private void updateSlaPolicyForUpgradedPriority(Incident incident, Priority upgradedPriority) {
+        incidentSlaRepository.findByIncidentId(incident.getId()).ifPresent(sla -> {
+            slaPolicyRepository.findByPriority(upgradedPriority).ifPresent(policy -> {
+                sla.setPolicy(policy);
+                LocalDateTime base = incident.getCreatedAt() != null ? incident.getCreatedAt() : LocalDateTime.now();
+                sla.setResponseDeadline(base.plusMinutes(policy.getResponseMinutes()));
+                sla.setResolutionDeadline(base.plusMinutes(policy.getResolutionMinutes()));
+                incidentSlaRepository.save(sla);
+                log.info("Adjusted SLA policy for incident {} to {} (Resolution deadline: {})",
+                        incident.getIncidentNumber(), upgradedPriority, sla.getResolutionDeadline());
+            });
+        });
+    }
+
+    private void notifyPriorityUpgrade(Incident incident, Incident correlatedWith, Priority oldP, Priority newP) {
+        if (incident.getReporter() != null) {
+            try {
+                Notification notif = Notification.builder()
+                        .recipient(incident.getReporter())
+                        .title("⚡ Priority Upgraded: " + incident.getIncidentNumber() + " -> " + newP)
+                        .message(String.format(
+                                "Your incident %s ('%s') has been correlated with %s. Priority was automatically upgraded from %s to %s to expedite resolution.",
+                                incident.getIncidentNumber(), incident.getTitle(), correlatedWith.getIncidentNumber(), oldP, newP
+                        ))
+                        .notificationType(NotificationType.ESCALATION)
+                        .relatedIncidentId(incident.getId())
+                        .relatedIncidentNumber(incident.getIncidentNumber())
+                        .build();
+                notificationRepository.save(notif);
+
+                emailLogRepository.save(EmailLog.builder()
+                        .recipientEmail(incident.getReporter().getEmail())
+                        .recipientName(incident.getReporter().getFullName())
+                        .subject("⚡ Priority Upgraded: " + incident.getIncidentNumber() + " -> " + newP)
+                        .body(String.format(
+                                "Hello %s,\n\nIncident %s has been correlated with %s. Due to multiple user reports of this issue, priority has been upgraded from %s to %s.\n\nStatus: %s\nAssigned Specialist: %s",
+                                incident.getReporter().getFullName(), incident.getIncidentNumber(), correlatedWith.getIncidentNumber(),
+                                oldP, newP, incident.getStatus(),
+                                incident.getAssignedTechnician() != null ? incident.getAssignedTechnician().getFullName() : "Awaiting assignment"
+                        ))
+                        .relatedIncidentId(incident.getId())
+                        .relatedIncidentNumber(incident.getIncidentNumber())
+                        .build());
+            } catch (Exception e) {
+                log.warn("Failed to notify reporter of priority upgrade: {}", e.getMessage());
+            }
+        }
+
+        if (incident.getAssignedTechnician() != null && incident.getAssignedTechnician().getUser() != null) {
+            try {
+                Notification techNotif = Notification.builder()
+                        .recipient(incident.getAssignedTechnician().getUser())
+                        .title("🚨 Priority Elevated: " + incident.getIncidentNumber() + " -> " + newP)
+                        .message(String.format(
+                                "Assigned incident %s ('%s') priority elevated from %s to %s due to duplicate report surge (%s).",
+                                incident.getIncidentNumber(), incident.getTitle(), oldP, newP, correlatedWith.getIncidentNumber()
+                        ))
+                        .notificationType(NotificationType.ESCALATION)
+                        .relatedIncidentId(incident.getId())
+                        .relatedIncidentNumber(incident.getIncidentNumber())
+                        .build();
+                notificationRepository.save(techNotif);
+            } catch (Exception e) {
+                log.warn("Failed to notify technician of priority upgrade: {}", e.getMessage());
+            }
+        }
     }
 }

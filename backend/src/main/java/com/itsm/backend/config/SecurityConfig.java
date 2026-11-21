@@ -95,7 +95,7 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(",")));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setExposedHeaders(List.of("Authorization", "X-Incident-Correlated", "X-Primary-Incident-Number"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

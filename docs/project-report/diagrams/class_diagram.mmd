@@ -1,0 +1,128 @@
+classDiagram
+    class User {
+        -Long id
+        -String username
+        -String email
+        -String password
+        -String fullName
+        -String department
+        -String phone
+        -Role role
+        -boolean enabled
+        -LocalDateTime createdAt
+    }
+
+    class Technician {
+        -Long id
+        -User user
+        -boolean available
+        -int maxConcurrentIncidents
+        -Set~TechnicianSkill~ skills
+        +boolean isAvailable()
+    }
+
+    class Incident {
+        -Long id
+        -String incidentNumber
+        -String title
+        -String description
+        -User reporter
+        -Technician assignedTechnician
+        -Category category
+        -ItService affectedService
+        -Priority priority
+        -IncidentStatus status
+        -int impact
+        -int urgency
+        -int businessCriticality
+        -String resolutionDetails
+        -String closureNotes
+        -LocalDateTime createdAt
+        -LocalDateTime resolvedAt
+        -LocalDateTime closedAt
+        +transitionTo(IncidentStatus next)
+    }
+
+    class AssignmentStrategy {
+        <<interface>>
+        +assignTechnician(Incident incident) Optional~Technician~
+        +getStrategyName() String
+    }
+
+    class SkillBasedAssignmentStrategy {
+        -TechnicianRepository technicianRepository
+        +assignTechnician(Incident incident) Optional~Technician~
+        +getStrategyName() String
+        -computeSkillScore(Technician tech, Set~String~ keywords) int
+    }
+
+    class LeastLoadedAssignmentStrategy {
+        -TechnicianRepository technicianRepository
+        +assignTechnician(Incident incident) Optional~Technician~
+        +getStrategyName() String
+    }
+
+    class AssignmentStrategyContext {
+        -SkillBasedAssignmentStrategy skillBasedStrategy
+        -LeastLoadedAssignmentStrategy leastLoadedStrategy
+        -SystemConfigRepository systemConfigRepository
+        +assignTechnician(Incident incident) Optional~Technician~
+        +getActiveStrategy() AssignmentStrategy
+    }
+
+    class PriorityEngine {
+        <<utility>>
+        +computeScore(int impact, int urgency, int criticality)$ int
+        +determinePriority(int impact, int urgency, int criticality)$ Priority
+        +fromScore(int score)$ Priority
+    }
+
+    class SlaPolicy {
+        -Long id
+        -Priority priority
+        -int responseTimeMinutes
+        -int resolutionTimeMinutes
+        -Category category
+    }
+
+    class IncidentSla {
+        -Long id
+        -Incident incident
+        -SlaPolicy slaPolicy
+        -LocalDateTime responseDeadline
+        -LocalDateTime resolutionDeadline
+        -LocalDateTime actualResponseTime
+        -LocalDateTime actualResolutionTime
+        -SlaStatus status
+        -boolean responseBreached
+        -boolean resolutionBreached
+    }
+
+    class NotificationEventListener {
+        -NotificationRepository notificationRepository
+        -EmailLogRepository emailLogRepository
+        +onIncidentCreated(IncidentCreatedEvent event)
+        +onStatusChanged(IncidentStatusChangedEvent event)
+        +onIncidentAssigned(IncidentAssignedEvent event)
+    }
+
+    class AuditEventListener {
+        -AuditLogRepository auditLogRepository
+        +onIncidentCreated(IncidentCreatedEvent event)
+        +onStatusChanged(IncidentStatusChangedEvent event)
+        +onIncidentAssigned(IncidentAssignedEvent event)
+    }
+
+    AssignmentStrategy <|.. SkillBasedAssignmentStrategy : implements
+    AssignmentStrategy <|.. LeastLoadedAssignmentStrategy : implements
+    AssignmentStrategyContext o-- AssignmentStrategy : delegates to
+    IncidentService --> AssignmentStrategyContext : uses
+    IncidentService --> PriorityEngine : uses
+    Incident "1" *-- "1" IncidentSla : tracks SLA
+    Incident "1" o-- "1" User : reported by
+    Incident "1" o-- "0..1" Technician : assigned to
+    Technician "1" *-- "1" User : wraps user account
+    Technician "1" o-- "*" TechnicianSkill : specializes in
+    IncidentSla "1" o-- "1" SlaPolicy : governed by
+    IncidentService ..> NotificationEventListener : emits events to
+    IncidentService ..> AuditEventListener : emits events to

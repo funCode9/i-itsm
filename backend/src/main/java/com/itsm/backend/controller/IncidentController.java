@@ -1,10 +1,17 @@
 package com.itsm.backend.controller;
 
+import com.itsm.backend.domain.entity.EmailLog;
 import com.itsm.backend.domain.entity.Incident;
 import com.itsm.backend.domain.entity.IncidentNote;
+import com.itsm.backend.domain.entity.Notification;
 import com.itsm.backend.domain.entity.User;
 import com.itsm.backend.domain.enums.IncidentStatus;
+import com.itsm.backend.domain.enums.NoteType;
+import com.itsm.backend.domain.enums.NotificationType;
 import com.itsm.backend.dto.*;
+import com.itsm.backend.repository.EmailLogRepository;
+import com.itsm.backend.repository.IncidentRepository;
+import com.itsm.backend.repository.NotificationRepository;
 import com.itsm.backend.repository.UserRepository;
 import com.itsm.backend.service.IncidentService;
 import com.itsm.backend.service.IncidentNoteService;
@@ -16,6 +23,7 @@ import com.itsm.backend.service.intelligence.GeminiResolutionService;
 import com.itsm.backend.service.escalation.IncidentEscalationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +34,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/incidents")
 @RequiredArgsConstructor
+@Slf4j
 public class IncidentController {
 
     private final IncidentService incidentService;
@@ -37,16 +46,77 @@ public class IncidentController {
     private final RootCauseAnalysisService rootCauseAnalysisService;
     private final GeminiResolutionService geminiResolutionService;
     private final UserRepository userRepository;
+    private final IncidentRepository incidentRepository;
+    private final NotificationRepository notificationRepository;
+    private final EmailLogRepository emailLogRepository;
 
     @PostMapping
     public ResponseEntity<Incident> createIncident(@Valid @RequestBody CreateIncidentRequest req,
                                                     Authentication auth) {
         User user = getUser(auth);
+
+        // ─────────────────────────────────────────────────────────────────────
+        // STEP 1 — DUPLICATE CHECK *BEFORE* CREATING ANYTHING (Workflow 3)
+        // If a similar/identical ticket already exists, block creation and
+        // escalate the existing ticket's priority (P4→P3→P2→P1→P0).
+        // ─────────────────────────────────────────────────────────────────────
+        List<Incident> duplicates = duplicateDetectionService.findPotentialDuplicates(
+                req.getTitle(), req.getDescription(),
+                req.getCategoryId(), req.getServiceId(),
+                null // nothing created yet — no excludeId needed
+        );
+
+        if (!duplicates.isEmpty()) {
+            // DO NOT create a new ticket — escalate the existing primary ticket
+            Incident primary = duplicates.get(0);
+            String reason = String.format(
+                    "Duplicate report by %s: '%s'. Multi-user impact confirmed — priority escalated.",
+                    user.getFullName(), req.getTitle());
+
+            primary = incidentEscalationService.escalateIncident(primary.getId(), reason, user);
+
+            // Also add a note visible to the reporting employee
+            try {
+                noteService.addNote(primary.getId(), user.getId(),
+                        String.format("🔁 Duplicate submission by %s blocked. This ticket has been escalated instead.", user.getFullName()),
+                        com.itsm.backend.domain.enums.NoteType.INVESTIGATION, true);
+            } catch (Exception ex) {
+                log.warn("Could not attach duplicate note to {}: {}", primary.getIncidentNumber(), ex.getMessage());
+            }
+
+            // Notify the submitting employee that their report was merged
+            try {
+                notificationRepository.save(com.itsm.backend.domain.entity.Notification.builder()
+                        .recipient(user)
+                        .title("🔁 Duplicate Report Detected — Existing Ticket Escalated")
+                        .message(String.format(
+                                "Your report '%s' matches existing incident %s. No new ticket was created — the existing ticket's priority has been escalated instead.",
+                                req.getTitle(), primary.getIncidentNumber()))
+                        .notificationType(com.itsm.backend.domain.enums.NotificationType.ESCALATION)
+                        .relatedIncidentId(primary.getId())
+                        .relatedIncidentNumber(primary.getIncidentNumber())
+                        .build());
+            } catch (Exception ex) {
+                log.warn("Could not notify user of duplicate block: {}", ex.getMessage());
+            }
+
+            log.info("Duplicate submission blocked for '{}'. Escalated existing ticket {} to {}",
+                    req.getTitle(), primary.getIncidentNumber(), primary.getPriority());
+
+            return ResponseEntity.ok()
+                    .header("X-Incident-Correlated", "true")
+                    .header("X-Primary-Incident-Number", primary.getIncidentNumber())
+                    .body(primary);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // STEP 2 — No duplicate found — create a new ticket normally
+        // ─────────────────────────────────────────────────────────────────────
         Incident incident = incidentService.createIncident(req.getTitle(), req.getDescription(),
                 user.getId(), req.getCategoryId(), req.getServiceId(),
                 req.getImpact(), req.getUrgency(), req.getBusinessCriticality());
 
-        // Automated Classification & Strategy Assignment Pipeline (Workflow 1: Report -> Prioritize -> Assign)
+        // Automated Classification & Strategy Assignment Pipeline (Workflow 1)
         try {
             Long effectiveCategoryId = req.getCategoryId();
             if (effectiveCategoryId == null) {
@@ -57,7 +127,7 @@ public class IncidentController {
             incident = incidentService.classifyAndAssign(incident.getId(), effectiveCategoryId,
                     req.getServiceId(), req.getImpact(), req.getUrgency(), req.getBusinessCriticality(), user);
         } catch (Exception ex) {
-            // If technician unavailable or strategy is unassigned, incident safely remains NEW for manual triaging
+            log.warn("Classification/assignment fallback for {}: {}", incident.getIncidentNumber(), ex.getMessage());
         }
 
         return ResponseEntity.ok(incident);

@@ -3,6 +3,7 @@ import api from './axiosConfig';
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   register: (data) => api.post('/auth/register', data),
+  health: () => api.get('/auth/health'),
 };
 
 export const incidentAPI = {

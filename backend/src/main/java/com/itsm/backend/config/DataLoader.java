@@ -5,9 +5,12 @@ import com.itsm.backend.domain.enums.*;
 import com.itsm.backend.repository.*;
 import com.itsm.backend.service.TechnicianService;
 import com.itsm.backend.service.UserService;
+import com.itsm.backend.service.IncidentService;
+import com.itsm.backend.service.intelligence.DuplicateDetectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,16 +36,54 @@ public class DataLoader implements CommandLineRunner {
     private final UserRepository userRepository;
     private final TechnicianService technicianService;
     private final UserService userService;
+    private final IncidentRepository incidentRepository;
+    private final DuplicateDetectionService duplicateDetectionService;
+    private final IncidentService incidentService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        migrateP0PriorityConstraint();
         seedSlaPolicies();
         seedSystemConfig();
         seedAdminUser();
         seedCategories();
         seedServices();
         seedSampleTechnicians();
+        seedSampleEmployees();
+        correlateExistingDuplicates();
         log.info("=== I-ITSM Data Loader complete ===");
+    }
+
+    /**
+     * Migrates the priority CHECK constraint on incidents and sla_policies tables
+     * to include P0_EMERGENCY (added in Workflow 3 duplicate escalation fix).
+     * Safe to run multiple times — skips if P0_EMERGENCY already present.
+     */
+    private void migrateP0PriorityConstraint() {
+        try {
+            // Check if incidents constraint already includes P0
+            String def = jdbcTemplate.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'incidents_priority_check'",
+                String.class
+            );
+            if (def != null && def.contains("P0_EMERGENCY")) {
+                return; // Already migrated
+            }
+            log.info("Migrating priority CHECK constraints to include P0_EMERGENCY...");
+
+            jdbcTemplate.execute("ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_priority_check");
+            jdbcTemplate.execute("ALTER TABLE incidents ADD CONSTRAINT incidents_priority_check " +
+                "CHECK (priority IN ('P0_EMERGENCY','P1_CRITICAL','P2_HIGH','P3_MEDIUM','P4_LOW'))");
+
+            jdbcTemplate.execute("ALTER TABLE sla_policies DROP CONSTRAINT IF EXISTS sla_policies_priority_check");
+            jdbcTemplate.execute("ALTER TABLE sla_policies ADD CONSTRAINT sla_policies_priority_check " +
+                "CHECK (priority IN ('P0_EMERGENCY','P1_CRITICAL','P2_HIGH','P3_MEDIUM','P4_LOW'))");
+
+            log.info("Priority constraints migrated successfully — P0_EMERGENCY is now a valid priority level.");
+        } catch (Exception e) {
+            log.warn("Could not migrate priority constraints (may already be correct or non-PostgreSQL): {}", e.getMessage());
+        }
     }
 
     private void seedSlaPolicies() {
@@ -151,6 +192,51 @@ public class DataLoader implements CommandLineRunner {
             log.info("Seeded 4 sample technicians");
         } catch (Exception e) {
             log.warn("Sample technicians already exist or failed to seed: {}", e.getMessage());
+        }
+    }
+
+    private void seedSampleEmployees() {
+        try {
+            if (!userRepository.existsByUsername("user1")) {
+                userService.register("user1", "user1@itsm.local", "User@123",
+                        "John Employee", "Operations", "+1-555-0100", Role.EMPLOYEE);
+                log.info("Created default employee user (user1 / User@123)");
+            }
+            if (!userRepository.existsByUsername("user2")) {
+                userService.register("user2", "user2@itsm.local", "User@123",
+                        "Jane Employee", "Finance", "+1-555-0101", Role.EMPLOYEE);
+                log.info("Created default employee user (user2 / User@123)");
+            }
+        } catch (Exception e) {
+            log.warn("Sample employees already exist or failed to seed: {}", e.getMessage());
+        }
+    }
+
+    private void correlateExistingDuplicates() {
+        try {
+            List<Incident> openIncidents = incidentRepository.findAllOpen();
+            for (int i = 0; i < openIncidents.size(); i++) {
+                Incident inc1 = openIncidents.get(i);
+                if (inc1.getDuplicateOf() != null) continue;
+
+                List<Incident> matches = duplicateDetectionService.findPotentialDuplicates(
+                        inc1.getTitle(), inc1.getDescription(),
+                        inc1.getCategory() != null ? inc1.getCategory().getId() : null,
+                        inc1.getService() != null ? inc1.getService().getId() : null,
+                        inc1.getId()
+                );
+
+                for (Incident match : matches) {
+                    if (match.getId() > inc1.getId() && match.getDuplicateOf() == null) {
+                        User systemAdmin = userRepository.findByUsername("admin").orElse(inc1.getReporter());
+                        incidentService.correlateDuplicatesAndUpgradePriority(match, List.of(inc1), systemAdmin);
+                        log.info("Correlated existing duplicate incidents {} and {} -> upgraded priority to {}",
+                                inc1.getIncidentNumber(), match.getIncidentNumber(), match.getPriority());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Existing duplicate correlation pass skipped: {}", e.getMessage());
         }
     }
 }

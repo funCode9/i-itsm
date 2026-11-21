@@ -30,6 +30,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long>, JpaSp
 
     List<Incident> findByServiceId(Long serviceId);
 
+    List<Incident> findByDuplicateOfId(Long duplicateOfId);
+
     List<Incident> findByAssignedTechnicianIdAndStatusNotIn(Long technicianId, List<IncidentStatus> statuses);
 
     @Query("SELECT i FROM Incident i WHERE i.status NOT IN ('RESOLVED','VERIFIED','CLOSED')")

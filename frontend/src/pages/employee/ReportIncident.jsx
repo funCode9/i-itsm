@@ -86,24 +86,32 @@ export default function ReportIncident() {
     return () => clearTimeout(timer);
   }, [form.title, form.description]);
 
-  // Check for duplicates when title or service changes
-  const runDuplicateCheck = async () => {
-    if (form.title.trim().length < 6) return;
-    setCheckingDuplicates(true);
-    try {
-      const res = await incidentApi.checkDuplicates({
-        title: form.title,
-        description: form.description,
-        categoryId: form.categoryId || undefined,
-        serviceId: form.serviceId || undefined,
-      });
-      setDuplicates(Array.isArray(res.data) ? res.data : []);
-    } catch {
+  // Real-time Duplicate & Related Tickets Detection (Debounced 350ms as user types)
+  useEffect(() => {
+    const trimmedTitle = form.title.trim();
+    if (trimmedTitle.length < 3) {
       setDuplicates([]);
-    } finally {
-      setCheckingDuplicates(false);
+      return;
     }
-  };
+    const timer = setTimeout(async () => {
+      setCheckingDuplicates(true);
+      try {
+        const res = await incidentApi.checkDuplicates({
+          title: trimmedTitle,
+          description: form.description?.trim() || undefined,
+          categoryId: form.categoryId || undefined,
+          serviceId: form.serviceId || undefined,
+        });
+        setDuplicates(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        setDuplicates([]);
+      } finally {
+        setCheckingDuplicates(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [form.title, form.description, form.categoryId, form.serviceId]);
 
   const setField = (field) => (e) => {
     setForm({ ...form, [field]: e.target.value });
@@ -129,7 +137,18 @@ export default function ReportIncident() {
         businessCriticality: Number(form.businessCriticality),
       };
       const res = await incidentApi.create(payload);
-      navigate(`/incidents/${res.data.id}`);
+      const isCorrelated = Boolean(
+        res.headers?.['x-incident-correlated'] === 'true' ||
+        res.headers?.['X-Incident-Correlated'] === 'true' ||
+        (res.data?.escalated && res.data?.escalationReason?.toLowerCase().includes('duplicate'))
+      );
+      navigate(`/incidents/${res.data.id}`, {
+        state: {
+          correlated: isCorrelated,
+          primaryNumber: res.data.incidentNumber,
+          priority: res.data.priority,
+        },
+      });
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Failed to submit incident ticket');
     } finally {
@@ -157,53 +176,6 @@ export default function ReportIncident() {
         {error && (
           <Alert severity="error" sx={{ mb: 2.5, borderRadius: '8px' }} onClose={() => setError('')}>
             {error}
-          </Alert>
-        )}
-
-        {/* Duplicate Incidents Warning Banner */}
-        {duplicates.length > 0 && (
-          <Alert
-            severity="warning"
-            icon={<WarningAmber />}
-            sx={{
-              mb: 2.5,
-              borderRadius: '8px',
-              border: '1px solid #fed7aa',
-              bgcolor: '#fffbeb',
-            }}
-          >
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#9a3412', mb: 0.5 }}>
-              Potential Duplicate Incident Detected ({duplicates.length})
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#7c2d12', mb: 1, fontSize: '0.82rem' }}>
-              Similar open incidents are already logged in the system. Submitting a duplicate may delay response times:
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-              {duplicates.map((dup) => (
-                <Box
-                  key={dup.id}
-                  onClick={() => navigate(`/incidents/${dup.id}`)}
-                  sx={{
-                    p: 1,
-                    bgcolor: 'white',
-                    borderRadius: '6px',
-                    border: '1px solid #fed7aa',
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: '#fff7ed' },
-                  }}
-                >
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#4f85c8', fontFamily: 'JetBrains Mono' }}>
-                    {dup.incidentNumber}
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#1e293b' }}>
-                    {dup.title}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#64748b' }}>
-                    Status: {dup.status} • Service: {dup.service?.name || 'General'}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
           </Alert>
         )}
 
@@ -247,7 +219,6 @@ export default function ReportIncident() {
                 placeholder="e.g., Office VPN disconnected and corporate Wi-Fi authentication failing"
                 value={form.title}
                 onChange={setField('title')}
-                onBlur={runDuplicateCheck}
                 required
               />
             </Grid>
@@ -293,6 +264,139 @@ export default function ReportIncident() {
               </Grid>
             )}
 
+            {/* Real-time Word Similarity / Duplicate Tickets Alert */}
+            {duplicates.length > 0 && (
+              <Grid item xs={12}>
+                <Alert
+                  severity="warning"
+                  icon={<WarningAmber />}
+                  sx={{
+                    borderRadius: '8px',
+                    border: '1px solid #fed7aa',
+                    bgcolor: '#fffbeb',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.6 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#9a3412', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      ⚠️ Similar Open Ticket Found ({duplicates.length}) — No Duplicate Will Be Created
+                    </Typography>
+                    <Chip
+                      label="Word Similarity Match"
+                      size="small"
+                      sx={{
+                        fontSize: '0.7rem',
+                        height: 20,
+                        fontWeight: 700,
+                        bgcolor: '#fef3c7',
+                        color: '#b45309',
+                        border: '1px solid #fde68a',
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="body2" sx={{ color: '#7c2d12', mb: 1.2, fontSize: '0.82rem', fontWeight: 600 }}>
+                    🚫 Submitting this report will NOT create a new ticket. Instead, the existing ticket&apos;s priority will be automatically escalated (e.g. P4 → P3, P3 → P2, etc.) to reflect multi-user impact.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    {duplicates.map((dup) => (
+                      <Box
+                        key={dup.id}
+                        sx={{
+                          p: 1.2,
+                          bgcolor: '#ffffff',
+                          borderRadius: '6px',
+                          border: '1px solid #fed7aa',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 1.5,
+                          transition: 'all 0.15s ease-in-out',
+                          '&:hover': {
+                            bgcolor: '#fff7ed',
+                            borderColor: '#fb923c',
+                            boxShadow: '0 2px 4px rgba(234, 88, 12, 0.1)',
+                          },
+                        }}
+                      >
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3, flexWrap: 'wrap' }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                fontWeight: 700,
+                                color: '#0284c7',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                fontSize: '0.78rem',
+                              }}
+                            >
+                              {dup.incidentNumber}
+                            </Typography>
+                            <Chip
+                              label={dup.status}
+                              size="small"
+                              sx={{
+                                fontSize: '0.68rem',
+                                height: 18,
+                                fontWeight: 700,
+                                bgcolor: '#f1f5f9',
+                                color: '#475569',
+                              }}
+                            />
+                            {dup.service?.name && (
+                              <Chip
+                                label={dup.service.name}
+                                size="small"
+                                sx={{
+                                  fontSize: '0.68rem',
+                                  height: 18,
+                                  bgcolor: '#e0f2fe',
+                                  color: '#0369a1',
+                                  fontWeight: 600,
+                                }}
+                              />
+                            )}
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: '0.84rem',
+                              color: '#1e293b',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {dup.title}
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => window.open(`/incidents/${dup.id}`, '_blank')}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            py: 0.3,
+                            px: 1.2,
+                            borderColor: '#fb923c',
+                            color: '#c2410c',
+                            flexShrink: 0,
+                            '&:hover': {
+                              bgcolor: '#ffedd5',
+                              borderColor: '#ea580c',
+                            },
+                          }}
+                        >
+                          View Ticket
+                        </Button>
+                      </Box>
+                    ))}
+                  </Box>
+                </Alert>
+              </Grid>
+            )}
+
             {/* Description */}
             <Grid item xs={12}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155', mb: 0.8 }}>
@@ -306,7 +410,6 @@ export default function ReportIncident() {
                 placeholder="Describe what occurred, any error codes displayed, troubleshooting attempts, and affected equipment..."
                 value={form.description}
                 onChange={setField('description')}
-                onBlur={runDuplicateCheck}
                 required
               />
             </Grid>

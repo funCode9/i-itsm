@@ -17,6 +17,7 @@ const NOTIF_STYLES = {
   SLA_BREACH: { color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
   INCIDENT_RESOLVED: { color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
   FEEDBACK_REQUESTED: { color: '#4f85c8', bg: '#eff6ff', border: '#bfdbfe' },
+  ESCALATION: { color: '#ea580c', bg: '#fff7ed', border: '#fed7aa' },
 };
 
 export default function NotificationsPage() {

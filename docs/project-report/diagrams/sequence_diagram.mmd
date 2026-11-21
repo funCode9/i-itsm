@@ -1,0 +1,57 @@
+sequenceDiagram
+    autonumber
+    actor Employee as Employee / Reporter
+    participant FE as React Frontend
+    participant IC as IncidentController
+    participant IS as IncidentService
+    participant PE as PriorityEngine
+    participant SC as AssignmentStrategyContext
+    participant EP as ApplicationEventPublisher
+    participant NL as NotificationEventListener
+    participant AL as AuditEventListener
+    actor Tech as Assigned Technician
+    actor Admin as IT Administrator
+
+    Employee->>FE: Fills Incident Form (Title, Service, Impact=3, Urgency=3, Crit=3)
+    FE->>IC: POST /api/incidents
+    IC->>IS: createIncident(...)
+    IS->>PE: computeScore(3, 3, 3) -> 27
+    PE-->>IS: Priority.P1_CRITICAL
+    IS->>IS: Status = NEW
+    IS->>EP: publishEvent(IncidentCreatedEvent)
+    par Async Notification & Audit Observers
+        EP-)NL: onIncidentCreated() -> In-App Notification & EmailLog created
+        EP-)AL: onIncidentCreated() -> AuditLog recorded (State: NEW)
+    end
+    IS->>SC: assignTechnician(incident)
+    SC->>SC: getActiveStrategy() -> SkillBasedAssignmentStrategy
+    SC-->>IS: Technician (Alex Network)
+    IS->>IS: Status = ASSIGNED, Assignee = Alex
+    IS->>EP: publishEvent(IncidentAssignedEvent)
+    par Async Assignment Notifications
+        EP-)NL: onIncidentAssigned() -> Alerts Technician Alex & Reporter
+        EP-)AL: onIncidentAssigned() -> AuditLog recorded (State: ASSIGNED)
+    end
+    IS-->>IC: Incident DTO (INC-20261121-0001)
+    IC-->>FE: 201 Created (Incident JSON)
+    FE-->>Employee: Displays Ticket Number & Real-time Live Status
+
+    Note over Tech, FE: Investigation & SLA Tracking
+    Tech->>FE: Opens Assigned Incidents Queue
+    Tech->>IC: PATCH /api/incidents/{id}/status (ACKNOWLEDGED)
+    IC->>IS: updateStatus(ACKNOWLEDGED)
+    IS->>EP: publishEvent(IncidentStatusChangedEvent)
+    Tech->>IC: PATCH /api/incidents/{id}/status (IN_PROGRESS)
+    Tech->>IC: POST /api/incidents/{id}/notes (Adds Troubleshooting Note)
+    Tech->>IC: GET /api/incidents/{id}/root-cause (Inspects Heuristic RCA)
+    Tech->>IC: PATCH /api/incidents/{id}/status (RESOLVED, Resolution Details)
+    IS->>IS: Status = RESOLVED, resolvedAt = now()
+    IS->>EP: publishEvent(IncidentStatusChangedEvent)
+    EP-)NL: Alerts Employee that incident is Resolved
+
+    Note over Employee, Admin: Verification & Closure
+    Employee->>FE: Reviews resolution details & confirms service restored
+    Employee->>IC: PATCH /api/incidents/{id}/status (VERIFIED)
+    Employee->>IC: PATCH /api/incidents/{id}/status (CLOSED, Closure Notes)
+    Employee->>FE: Submits 5-Star Feedback Rating
+    Admin->>FE: Views Updated Dashboard Metrics & SLA Compliance (0 Breaches)

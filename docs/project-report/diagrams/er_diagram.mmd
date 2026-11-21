@@ -1,0 +1,177 @@
+erDiagram
+    users ||--o{ incidents : "reports"
+    users ||--o| technicians : "serves as"
+    users ||--o{ audit_logs : "acts in"
+    users ||--o{ notifications : "receives"
+    users ||--o{ email_logs : "addressed to"
+    users ||--o{ feedback : "submits"
+    users ||--o{ incident_notes : "authors"
+
+    technicians ||--o{ incidents : "assigned to"
+    technicians ||--o{ technician_skills : "possesses"
+    technicians ||--o{ assignment_history : "logged in"
+
+    categories ||--o{ incidents : "categorizes"
+    categories ||--o{ it_services : "groups"
+    categories ||--o{ sla_policies : "sets baseline for"
+
+    it_services ||--o{ incidents : "impacted in"
+
+    incidents ||--|| incident_sla_records : "monitored by"
+    incidents ||--o{ incident_notes : "contains"
+    incidents ||--o{ assignment_history : "tracks changes"
+    incidents ||--o{ feedback : "evaluated by"
+    incidents ||--o{ audit_logs : "records history"
+
+    sla_policies ||--o{ incident_sla_records : "defines limits"
+
+    users {
+        bigint id PK
+        varchar username UK
+        varchar email UK
+        varchar password
+        varchar full_name
+        varchar role
+        varchar department
+        varchar phone
+        boolean enabled
+        timestamp created_at
+    }
+
+    technicians {
+        bigint id PK
+        bigint user_id FK,UK
+        boolean available
+        integer max_concurrent_incidents
+    }
+
+    technician_skills {
+        bigint id PK
+        bigint technician_id FK
+        varchar skill_name
+    }
+
+    categories {
+        bigint id PK
+        varchar name UK
+        varchar description
+        varchar keywords
+        boolean active
+    }
+
+    it_services {
+        bigint id PK
+        varchar name UK
+        varchar description
+        bigint category_id FK
+        varchar business_criticality
+        boolean active
+    }
+
+    sla_policies {
+        bigint id PK
+        varchar priority
+        integer response_time_minutes
+        integer resolution_time_minutes
+        bigint category_id FK
+    }
+
+    incidents {
+        bigint id PK
+        varchar incident_number UK
+        varchar title
+        text description
+        bigint reporter_id FK
+        bigint technician_id FK
+        bigint category_id FK
+        bigint service_id FK
+        varchar priority
+        varchar status
+        integer impact
+        integer urgency
+        integer business_criticality
+        text resolution_details
+        text closure_notes
+        timestamp created_at
+        timestamp resolved_at
+        timestamp closed_at
+    }
+
+    incident_sla_records {
+        bigint id PK
+        bigint incident_id FK,UK
+        bigint sla_policy_id FK
+        timestamp response_deadline
+        timestamp resolution_deadline
+        timestamp actual_response_time
+        timestamp actual_resolution_time
+        varchar status
+        boolean response_breached
+        boolean resolution_breached
+    }
+
+    incident_notes {
+        bigint id PK
+        bigint incident_id FK
+        bigint author_id FK
+        text content
+        varchar note_type
+        timestamp created_at
+    }
+
+    assignment_history {
+        bigint id PK
+        bigint incident_id FK
+        bigint technician_id FK
+        bigint assigned_by_id FK
+        varchar strategy_used
+        timestamp assigned_at
+    }
+
+    audit_logs {
+        bigint id PK
+        timestamp timestamp
+        bigint actor_id FK
+        bigint incident_id FK
+        varchar action
+        varchar previous_state
+        varchar new_state
+        varchar description
+    }
+
+    email_logs {
+        bigint id PK
+        timestamp timestamp
+        bigint recipient_id FK
+        varchar subject
+        text body
+        bigint incident_id FK
+        varchar status
+    }
+
+    notifications {
+        bigint id PK
+        bigint user_id FK
+        varchar title
+        varchar message
+        varchar type
+        bigint incident_id FK
+        boolean read
+        timestamp created_at
+    }
+
+    feedback {
+        bigint id PK
+        bigint incident_id FK,UK
+        bigint user_id FK
+        integer rating
+        text comments
+        timestamp created_at
+    }
+
+    system_config {
+        bigint id PK
+        varchar config_key UK
+        varchar config_value
+        varchar description
+    }

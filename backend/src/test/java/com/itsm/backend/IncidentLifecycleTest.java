@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class IncidentLifecycleTest {
 
     private final IncidentService incidentService = new IncidentService(
-            null, null, null, null, null, null, null, null, null, null
+            null, null, null, null, null, null, null, null, null, null, null, null, null
     );
 
     @Test
