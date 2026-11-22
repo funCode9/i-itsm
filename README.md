@@ -239,7 +239,7 @@ This automatically sets the database credentials, starts the Spring Boot backend
 | **Technician (Hardware)** | `tech.hardware` | `Tech@123` |
 | **Technician (Software)** | `tech.software` | `Tech@123` |
 | **Technician (Security)** | `tech.security` | `Tech@123` |
-| **Employee** | `user1` | `User@123` |
+| **Employee** | `employee` | `Emp$123` |
 
 ---
 
