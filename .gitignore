@@ -20,3 +20,6 @@ dist/
 
 # Local development credentials
 application-local.properties
+
+# Scratch and temporary generator scripts
+scratch/

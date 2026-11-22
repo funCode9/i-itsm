@@ -1,6 +1,4 @@
 # GitHub Linguist Language Detection Configuration
-# Exclude scratch tools, temporary HTML exports, and documentation from language stats
-
-scratch/** linguist-vendored
 *.html linguist-detectable=false
+frontend/index.html linguist-detectable=false
 docs/** linguist-documentation
