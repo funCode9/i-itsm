@@ -766,8 +766,11 @@ export default function IncidentDrawer({ open, incident, onClose, onRefresh }) {
               </Button>
             )}
 
-            {/* Pre-emptive / SLA Escalation Button */}
-            {!['RESOLVED', 'VERIFIED', 'CLOSED'].includes(incident.status) && (user?.role === 'ADMINISTRATOR' || user?.role === 'TECHNICIAN') && (
+            {/* Pre-emptive / SLA Escalation Button (Hidden for P0 Emergency as it is already highest priority) */}
+            {!['RESOLVED', 'VERIFIED', 'CLOSED'].includes(incident.status) &&
+             incident.priority !== 'P0_EMERGENCY' &&
+             incident.priority !== 'P0' &&
+             (user?.role === 'ADMINISTRATOR' || user?.role === 'TECHNICIAN') && (
               <Button
                 variant="outlined"
                 size="small"

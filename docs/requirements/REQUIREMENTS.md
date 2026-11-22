@@ -1,102 +1,72 @@
 # I-ITSM System Requirements Specification
 
-## 1. Functional Requirements
-
-### 1.1 User & Role Management (RBAC)
-- **FR-1.1:** System shall support three distinct user roles: `EMPLOYEE`, `TECHNICIAN`, and `ADMINISTRATOR`.
-- **FR-1.2:** Unauthenticated users can register an `EMPLOYEE` account with username, email, full name, department, phone, and password.
-- **FR-1.3:** System shall authenticate users via JWT with secure BCrypt password hashing.
-- **FR-1.4:** System shall prevent duplicate usernames and emails.
-- **FR-1.5:** Administrators shall have privileges to enable/disable user accounts and promote employees to technicians.
-
-### 1.2 Incident Management & Lifecycle
-- **FR-2.1:** Employees shall be able to create an incident with title, description, category, affected service, impact, urgency, and business criticality.
-- **FR-2.2:** System shall auto-generate a unique incident tracking identifier matching the format `INC-YYYYMMDD-NNNN`.
-- **FR-2.3:** System shall calculate rule-based priority scores:
-  $$\text{Priority Score} = \text{Impact} \times \text{Urgency} \times \text{Business Criticality}$$
-  with factors constrained between 1 and 3.
-- **FR-2.4:** System shall enforce the strict 8-stage lifecycle:
-  `NEW` ➔ `CLASSIFIED` ➔ `ASSIGNED` ➔ `ACKNOWLEDGED` ➔ `IN_PROGRESS` ➔ `RESOLVED` ➔ `VERIFIED` ➔ `CLOSED`.
-- **FR-2.5:** System shall prevent illegal transitions (e.g., jumping from `NEW` to `RESOLVED`).
-
-### 1.3 Technician Assignment Strategies (GoF Strategy Pattern)
-- **FR-3.1:** System shall support Strategy A (`SKILL_BASED`), which scores available technicians based on domain keyword matches against category, service, and incident text.
-- **FR-3.2:** System shall support Strategy B (`LEAST_LOADED`), which dynamically queries active (unresolved) incident counts and assigns the technician with the least active workload.
-- **FR-3.3:** Administrators shall be able to toggle the active assignment strategy in runtime configuration.
-
-### 1.4 Service Level Agreement (SLA) Management
-- **FR-4.1:** System shall maintain SLA response and resolution targets per priority:
-  - **P1 Critical:** Response 5 min, Resolution 30 min.
-  - **P2 High:** Response 15 min, Resolution 2 hours (120 min).
-  - **P3 Medium:** Response 1 hour (60 min), Resolution 8 hours (480 min).
-  - **P4 Low:** Response 4 hours (240 min), Resolution 24 hours (1440 min).
-- **FR-4.2:** System shall compute exact response and resolution deadlines upon incident assignment.
-- **FR-4.3:** System shall continuously monitor active incidents via a background job running every 60 seconds.
-- **FR-4.4:** System shall issue warning notifications when an incident is within 20% of its deadline, and record a violation breach when deadlines are exceeded.
-
-### 1.5 Intelligent Features
-- **FR-5.1 (Duplicate Detection):** System shall compare title and description tokens using Jaccard similarity across open incidents and score potential duplicates before submission.
-- **FR-5.2 (Category Suggestion):** System shall analyze ticket title and description keywords against category dictionaries to suggest relevant categories automatically.
-
-### 1.6 Audit Trail & Notifications (GoF Observer Pattern)
-- **FR-6.1:** System shall publish domain events on creation, assignment, and status modification.
-- **FR-6.2:** System shall maintain an append-only, immutable `audit_logs` table tracking timestamp, actor, action, previous state, new state, and description.
-- **FR-6.3:** System shall generate persistent in-app notifications with read/unread tracking.
-- **FR-6.4:** System shall record simulated outbound email logs in the `email_logs` table.
-
-### 1.7 Feedback & Search/Reporting
-- **FR-7.1:** Employees shall be able to submit a 1–5 star rating and comment on resolved incidents.
-- **FR-7.2:** System shall provide administrative aggregate reports for status distribution, priority distribution, category distribution, SLA compliance, and technician workload.
+**Course:** CS F213 / MAC F212 — Object Oriented Programming  
+**Department:** Department of Computer Science & Information Systems, BITS Pilani  
+**Project:** Intelligent IT Service Management & Incident Resolution System (I-ITSM)  
+**Group Number:** 36  
+**Submission Date:** 22/11/2026  
 
 ---
 
-## 2. Non-Functional Requirements
+## 1. Stakeholders
 
-- **NFR-1 (Security):** Stateless JWT authentication with token expiration, BCrypt password hashing, and role checks on all non-public API endpoints.
-- **NFR-2 (Performance):** Background SLA scanning running in pooled tasks; async observer listeners executing without blocking client HTTP threads.
-- **NFR-3 (Data Integrity):** Foreign key constraints, unique constraints on usernames, emails, and incident numbers, and transactional rollback mechanisms.
-- **NFR-4 (Usability):** Responsive React interface styled with Material UI, visual priority and status indicators, intuitive dashboards tailored per role.
+| Stakeholder | What They Need |
+|:---|:---|
+| **Employee / Reporter** | A simple, accessible way to report IT issues, check resolution progress, comment on tickets, and verify solutions. |
+| **Technician / Support Engineer** | Clear ownership of assigned tickets, rich problem details, investigation work notes, SLA deadlines, and diagnostic assistance. |
+| **Administrator / IT Manager** | Centralized control over users, technician rosters, service policies, assignment rules, audit logs, and compliance analytics. |
+| **Organization / Service Owner** | Faster turnaround, reduced service downtime, reliable audit history, and complete SLA compliance visibility. |
 
 ---
 
-## 3. Use Case Diagram
+## 2. User Roles & Permissions
 
-```mermaid
-flowchart LR
-    Employee((Employee))
-    Technician((Technician))
-    Admin((Administrator))
+| Role | Main Responsibilities |
+|:---|:---|
+| **Employee** | Create incident tickets, track own reported issues, add comments, verify resolved solutions, and give 1–5 star satisfaction feedback. |
+| **Technician** | View assigned incident queue, acknowledge tickets, investigate root causes, add diagnostic notes, and resolve incidents. |
+| **Administrator** | Manage users, categories, services, and SLA policies; switch active assignment strategy at runtime; review audit logs and operations dashboards. |
 
-    subgraph UC_Incidents ["Incident Management"]
-        UC1["Report Incident"]
-        UC2["View My Incidents"]
-        UC3["Verify Resolution"]
-        UC4["Submit Feedback"]
-        UC5["Acknowledge Incident"]
-        UC6["Investigate & Add Notes"]
-        UC7["Resolve Incident"]
-    end
+---
 
-    subgraph UC_Admin ["Administration & Intelligence"]
-        UC8["Manage Users & Technicians"]
-        UC9["Configure SLA Policies"]
-        UC10["Switch Assignment Strategy"]
-        UC11["View Reports & Workload"]
-        UC12["Inspect Audit Logs & SLA Breaches"]
-    end
+## 3. Functional Requirements (FR-01 to FR-11)
 
-    Employee --> UC1
-    Employee --> UC2
-    Employee --> UC3
-    Employee --> UC4
+| ID | Functional Requirement | Description / Acceptance Criteria |
+|:---:|:---|:---|
+| **FR-01** | Register & Authenticate | Register user accounts and authenticate with username/password, issuing stateless JWT tokens for valid sessions. |
+| **FR-02** | Role-Based Access Control | Enforce strict permissions across Employee, Technician, and Administrator roles with HTTP 403 Forbidden on unauthorized access. |
+| **FR-03** | Incident Ticket Management | Allow ticket creation capturing title, description, category, affected IT service, priority factors, reporter, and initial status `NEW`. |
+| **FR-04** | Priority Computation Engine | Calculate priority deterministically: $\text{Priority Score} = \text{Impact} \times \text{Urgency} \times \text{Criticality}$ ($1–27$) and map to tiers P1–P4. |
+| **FR-05** | Lifecycle FSM Enforcement | Validate all state changes using the 8-stage Finite State Machine. Reject illegal status jumps with `InvalidStateTransitionException`. |
+| **FR-06** | Strategy-Based Assignment | Assign tickets to technicians polymorphically using the active GoF Strategy (`SkillBasedAssignmentStrategy` or `LeastLoadedAssignmentStrategy`). |
+| **FR-07** | SLA Deadline & Breach Tracking | Apply priority-based response and resolution deadlines; run background monitoring every 60s; record warning alerts and violation breaches. |
+| **FR-08** | Work Notes & Resolution Feedback | Enable internal diagnostic notes and employee comments; capture resolution details and customer satisfaction ratings upon verification. |
+| **FR-09** | Notifications & Audit Trail | Publish decoupled domain events via Observer pattern to record in-app notifications, simulated email logs, and immutable audit entries. |
+| **FR-10** | Administration & Reporting | Provide administrative configuration of categories, services, SLA policies, and assignment strategies, plus operations analytics. |
+| **FR-11** | Intelligent Assistance | Offer rule-based category suggestions and soft-token Jaccard duplicate incident warnings to prevent ticket queue noise. |
 
-    Technician --> UC5
-    Technician --> UC6
-    Technician --> UC7
+---
 
-    Admin --> UC8
-    Admin --> UC9
-    Admin --> UC10
-    Admin --> UC11
-    Admin --> UC12
-```
+## 4. Non-Functional Requirements (NFR)
+
+| Quality Dimension | Requirement / Acceptance Focus |
+|:---|:---|
+| **Security** | BCrypt password hashing, stateless JJWT token verification, role-based endpoint authorization (`@PreAuthorize`), and CORS restrictions. |
+| **Reliability** | Persistent storage in PostgreSQL with ACID transactional rollback on failures; robust global error handling returning meaningful HTTP error envelopes. |
+| **Usability** | Polished, accessible React interface styled with Material UI (MUI v6); clear role-tailored navigation, visual status chips, and real-time form validation. |
+| **Maintainability** | Clean four-tier layered architecture separating React components, REST controllers, Java domain services, and JPA repositories. |
+| **Performance** | Asynchronous event listeners for notifications and audit logging; optimized JPA entity queries with indexed lookups; background SLA scanning in dedicated thread pools. |
+
+---
+
+## 5. Business Rules (BR-01 to BR-07)
+
+| Rule | Definition |
+|:---:|:---|
+| **BR-01** | Priority score = $\text{Impact} \times \text{Urgency} \times \text{Business Criticality}$; each factor is calibrated from 1 (Low) to 3 (High). |
+| **BR-02** | Priority mapping: Score 18–27 maps to **P1 Critical**; 12–17 to **P2 High**; 6–11 to **P3 Medium**; 1–5 to **P4 Low**. |
+| **BR-03** | Status transitions must follow the strict lifecycle: `NEW` ➔ `CLASSIFIED` ➔ `ASSIGNED` ➔ `ACKNOWLEDGED` ➔ `IN_PROGRESS` ➔ `RESOLVED` ➔ `VERIFIED` ➔ `CLOSED`. Illegal jumps raise an exception. |
+| **BR-04** | A configured assignment strategy selects among available technicians. Administrators can switch between Skill-Based and Least-Loaded at runtime. |
+| **BR-05** | SLA targets depend on priority (P1: 5m/30m, P2: 15m/2h, P3: 1h/8h, P4: 4h/24h) and are monitored continuously against deadlines. Warnings trigger at $\le 20\%$ time remaining. |
+| **BR-06** | Employees can view and interact only with their own tickets; administrator-only functions strictly require the `ADMINISTRATOR` role. |
+| **BR-07** | A `RESOLVED` incident may be reopened to `IN_PROGRESS` if verification reveals the issue persists, or closed after customer confirmation. |

@@ -169,8 +169,8 @@ export default function SlaMonitoringPage() {
                           height: 18,
                           fontSize: '0.62rem',
                           fontWeight: 700,
-                          bgcolor: p.priority === 'P1_CRITICAL' ? '#fee2e2' : p.priority === 'P2_HIGH' ? '#ffedd5' : '#f1f5f9',
-                          color: p.priority === 'P1_CRITICAL' ? '#b91c1c' : p.priority === 'P2_HIGH' ? '#c2410c' : '#475569',
+                          bgcolor: (p.priority === 'P0_EMERGENCY' || p.priority === 'P0') ? '#4a0000' : p.priority === 'P1_CRITICAL' ? '#fee2e2' : p.priority === 'P2_HIGH' ? '#ffedd5' : '#f1f5f9',
+                          color: (p.priority === 'P0_EMERGENCY' || p.priority === 'P0') ? '#ffffff' : p.priority === 'P1_CRITICAL' ? '#b91c1c' : p.priority === 'P2_HIGH' ? '#c2410c' : '#475569',
                         }}
                       />
                     </TableCell>

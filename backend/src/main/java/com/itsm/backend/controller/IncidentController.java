@@ -55,68 +55,12 @@ public class IncidentController {
                                                     Authentication auth) {
         User user = getUser(auth);
 
-        // ─────────────────────────────────────────────────────────────────────
-        // STEP 1 — DUPLICATE CHECK *BEFORE* CREATING ANYTHING (Workflow 3)
-        // If a similar/identical ticket already exists, block creation and
-        // escalate the existing ticket's priority (P4→P3→P2→P1→P0).
-        // ─────────────────────────────────────────────────────────────────────
-        List<Incident> duplicates = duplicateDetectionService.findPotentialDuplicates(
-                req.getTitle(), req.getDescription(),
-                req.getCategoryId(), req.getServiceId(),
-                null // nothing created yet — no excludeId needed
-        );
-
-        if (!duplicates.isEmpty()) {
-            // DO NOT create a new ticket — escalate the existing primary ticket
-            Incident primary = duplicates.get(0);
-            String reason = String.format(
-                    "Duplicate report by %s: '%s'. Multi-user impact confirmed — priority escalated.",
-                    user.getFullName(), req.getTitle());
-
-            primary = incidentEscalationService.escalateIncident(primary.getId(), reason, user);
-
-            // Also add a note visible to the reporting employee
-            try {
-                noteService.addNote(primary.getId(), user.getId(),
-                        String.format("🔁 Duplicate submission by %s blocked. This ticket has been escalated instead.", user.getFullName()),
-                        com.itsm.backend.domain.enums.NoteType.INVESTIGATION, true);
-            } catch (Exception ex) {
-                log.warn("Could not attach duplicate note to {}: {}", primary.getIncidentNumber(), ex.getMessage());
-            }
-
-            // Notify the submitting employee that their report was merged
-            try {
-                notificationRepository.save(com.itsm.backend.domain.entity.Notification.builder()
-                        .recipient(user)
-                        .title("🔁 Duplicate Report Detected — Existing Ticket Escalated")
-                        .message(String.format(
-                                "Your report '%s' matches existing incident %s. No new ticket was created — the existing ticket's priority has been escalated instead.",
-                                req.getTitle(), primary.getIncidentNumber()))
-                        .notificationType(com.itsm.backend.domain.enums.NotificationType.ESCALATION)
-                        .relatedIncidentId(primary.getId())
-                        .relatedIncidentNumber(primary.getIncidentNumber())
-                        .build());
-            } catch (Exception ex) {
-                log.warn("Could not notify user of duplicate block: {}", ex.getMessage());
-            }
-
-            log.info("Duplicate submission blocked for '{}'. Escalated existing ticket {} to {}",
-                    req.getTitle(), primary.getIncidentNumber(), primary.getPriority());
-
-            return ResponseEntity.ok()
-                    .header("X-Incident-Correlated", "true")
-                    .header("X-Primary-Incident-Number", primary.getIncidentNumber())
-                    .body(primary);
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // STEP 2 — No duplicate found — create a new ticket normally
-        // ─────────────────────────────────────────────────────────────────────
+        // 1. Create the incident
         Incident incident = incidentService.createIncident(req.getTitle(), req.getDescription(),
                 user.getId(), req.getCategoryId(), req.getServiceId(),
                 req.getImpact(), req.getUrgency(), req.getBusinessCriticality());
 
-        // Automated Classification & Strategy Assignment Pipeline (Workflow 1)
+        // 2. Automated Classification & Strategy Assignment Pipeline (Workflow 1)
         try {
             Long effectiveCategoryId = req.getCategoryId();
             if (effectiveCategoryId == null) {
@@ -128,6 +72,24 @@ public class IncidentController {
                     req.getServiceId(), req.getImpact(), req.getUrgency(), req.getBusinessCriticality(), user);
         } catch (Exception ex) {
             log.warn("Classification/assignment fallback for {}: {}", incident.getIncidentNumber(), ex.getMessage());
+        }
+
+        // 3. Duplicate & Similar Incident Detection
+        List<Incident> duplicates = duplicateDetectionService.findPotentialDuplicates(
+                incident.getTitle(), incident.getDescription(),
+                incident.getCategory() != null ? incident.getCategory().getId() : null,
+                incident.getService() != null ? incident.getService().getId() : null,
+                incident.getId() // exclude the newly created incident itself
+        );
+
+        if (!duplicates.isEmpty()) {
+            // Upgrade the priority of BOTH the existing duplicate(s) and the new duplicate incident
+            incident = incidentService.correlateDuplicatesAndUpgradePriority(incident, duplicates, user);
+
+            return ResponseEntity.ok()
+                    .header("X-Incident-Correlated", "true")
+                    .header("X-Primary-Incident-Number", duplicates.get(0).getIncidentNumber())
+                    .body(incident);
         }
 
         return ResponseEntity.ok(incident);

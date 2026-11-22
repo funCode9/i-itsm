@@ -42,7 +42,7 @@ export default function IncidentQueueTable({
       inc.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'ALL' || inc.status === statusFilter;
-    const matchesPriority = priorityFilter === 'ALL' || inc.priority === priorityFilter;
+    const matchesPriority = priorityFilter === 'ALL' || inc.priority === priorityFilter || (priorityFilter === 'P0_EMERGENCY' && inc.priority === 'P0');
     const matchesCategory = categoryFilter === 'ALL' || inc.category?.name === categoryFilter;
     const matchesService = serviceFilter === 'ALL' || inc.service?.name === serviceFilter;
 
@@ -149,6 +149,7 @@ export default function IncidentQueueTable({
             sx={{ fontSize: '0.78rem', height: 34, minWidth: 110 }}
           >
             <MenuItem value="ALL">All Priorities</MenuItem>
+            <MenuItem value="P0_EMERGENCY">P0 Emergency</MenuItem>
             <MenuItem value="P1_CRITICAL">P1 Critical</MenuItem>
             <MenuItem value="P2_HIGH">P2 High</MenuItem>
             <MenuItem value="P3_MEDIUM">P3 Medium</MenuItem>

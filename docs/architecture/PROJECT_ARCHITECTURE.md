@@ -1,5 +1,14 @@
 # I-ITSM Project Architecture & Object-Oriented Design
 
+**Course:** CS F213 / MAC F212 — Object Oriented Programming  
+**Department:** Department of Computer Science & Information Systems, BITS Pilani  
+**Project:** Intelligent IT Service Management & Incident Resolution System (I-ITSM)  
+**Group Number:** 36  
+**Faculty:** Prof. Subhrakanta Panda  
+**Submission Date:** 22/11/2026  
+
+---
+
 ## 1. System Overview
 
 I-ITSM follows an enterprise layered architecture with separation of concerns across presentation, business logic, persistence, and external communication boundaries.
@@ -64,36 +73,20 @@ flowchart TD
 
 ---
 
-## 2. Object-Oriented Programming (OOP) Principles Implementation
+## 2. Object-Oriented Principles Demonstration
 
-### 1. Encapsulation
-- All domain entity attributes (`Incident`, `User`, `Technician`, `SlaPolicy`, etc.) are declared with `private` access modifiers.
-- Mutable state modifications occur through validated domain methods and service orchestrators.
-- Internal algorithms such as priority score calculation, token verification, and similarity matching are hidden from consumers behind well-defined public APIs.
-
-### 2. Abstraction
-- **Interfaces for Algorithms:** Callers interact with the `AssignmentStrategy` interface rather than concrete algorithmic implementations.
-- **Service Layer Abstraction:** Controllers do not execute direct SQL or entity manipulations; they interact with coarse-grained business services (`IncidentService`, `UserService`, `TechnicianService`).
-
-### 3. Inheritance
-- Spring Security integration uses inheritance by extending `OncePerRequestFilter` inside `JwtAuthFilter`.
-- `IncidentStatusChangedEvent`, `IncidentCreatedEvent`, and `IncidentAssignedEvent` inherit from Spring's `ApplicationEvent`.
-
-### 4. Polymorphism
-- The `AssignmentStrategy` interface exposes:
-  ```java
-  public interface AssignmentStrategy {
-      Optional<Technician> assignTechnician(Incident incident);
-      String getStrategyName();
-  }
-  ```
-  Both `SkillBasedAssignmentStrategy` and `LeastLoadedAssignmentStrategy` implement this interface polymorphically. The `AssignmentStrategyContext` executes `strategy.assignTechnician(incident)` without knowing or coupling to the concrete class.
-- The `GlobalExceptionHandler` polymorphic method overloading dynamically dispatches errors based on specific runtime exception signatures (`InvalidStateTransitionException`, `DuplicateResourceException`, etc.).
-
-### 5. Composition and Aggregation
-- **Composition:** `Technician` has an `@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)` relationship with `TechnicianSkill`. A `TechnicianSkill` has no independent lifecycle outside of its parent `Technician`.
-- **Composition:** `Incident` owns `IncidentNote` and `IncidentSla`.
-- **Aggregation:** `Incident` aggregates references to `User` (Reporter), `Technician` (Assignee), `Category`, and `ItService`. These independent entities exist prior to and beyond the incident.
+| OOP Design Requirement | How I-ITSM Demonstrates It |
+|---|---|
+| **Encapsulation** | `Incident`, `User`, `Technician`, and `SlaPolicy` keep fields `private` with controlled accessors. Services manage state modifications. |
+| **Abstraction** | `AssignmentStrategy.assignTechnician(Incident)` hides technician-selection logic. `IncidentService` exposes business operations. |
+| **Inheritance** | `JwtAuthFilter` extends Spring Security's `OncePerRequestFilter`. Custom exceptions specialize Java runtime exception types. |
+| **Polymorphism** | `AssignmentStrategyContext` calls `assignTechnician()` polymorphically on either `SkillBasedAssignmentStrategy` or `LeastLoadedAssignmentStrategy`. |
+| **Interfaces** | `AssignmentStrategy` declares common contract. Spring Data JPA repository interfaces define standard data access operations. |
+| **Composition** | `Technician` owns `TechnicianSkill` records with cascade and orphan removal. `Incident` owns notes and SLA records. |
+| **Association** | `Incident` associates independent `User` (reporter) and `Technician` (assignee) entities. |
+| **Aggregation** | `Incident` references shared catalog entities (`Category`, `ItService`) that survive incident deletion. |
+| **Exception Handling** | `InvalidStateTransitionException` rejects illegal lifecycle changes. `GlobalExceptionHandler` converts exceptions to HTTP responses. |
+| **Data Structures** | `Set<String>` for unique keyword tokens; `Map<IncidentStatus, Set<IncidentStatus>>` for FSM transition tables; `Optional<Technician>` for null-safe returns. |
 
 ---
 
@@ -132,7 +125,7 @@ classDiagram
     AssignmentStrategyContext --> AssignmentStrategy : invokes
 ```
 **Benefits:**
-- Adheres to Open-Closed Principle (OCP): new assignment algorithms (e.g., Round-Robin, Shift-Based) can be added without altering existing incident handling code.
+- Adheres to Open-Closed Principle (OCP): new assignment algorithms can be added without altering existing incident handling code.
 - Runtime dynamic reconfigurability: Administrators change the active strategy without restarting the application.
 
 ### Design Pattern 2: Observer Pattern (Incident Events, Audit & Notifications)
@@ -148,20 +141,20 @@ sequenceDiagram
 
     Tech->>IS: transitionStatus(incidentId, IN_PROGRESS)
     IS->>IS: validateTransition(ACKNOWLEDGED, IN_PROGRESS)
-    IS->>DB: save(updatedIncident)
+    IS->>DB: save(incident)
     IS->>EP: publishEvent(IncidentStatusChangedEvent)
-    par Async Audit Logging
-        EP->>AL: onStatusChanged(event)
-        AL->>DB: save(AuditLog)
-    and Async Notifications & Email Log
-        EP->>NL: onStatusChanged(event)
+    par Asynchronous Notification Observer
+        EP-->>NL: onIncidentStatusChanged(event)
         NL->>DB: save(Notification)
         NL->>DB: save(EmailLog)
+    and Asynchronous Audit Observer
+        EP-->>AL: onIncidentStatusChanged(event)
+        AL->>DB: save(AuditLog)
     end
 ```
 **Benefits:**
-- Decouples core incident workflow from side effects (audit logging, email simulation, user alerting).
-- Non-blocking execution: Event listeners run asynchronously (`@Async`), keeping REST responses fast.
+- Loose coupling: `IncidentService` does not need direct references to notification or audit services.
+- Extensibility: Adding a new listener (e.g., WebhookEventListener, SlackAlertListener) requires zero modifications to `IncidentService`.
 
 ---
 
@@ -169,15 +162,15 @@ sequenceDiagram
 
 ```mermaid
 stateDiagram-v2
-    [*] --> NEW : Incident Created
-    NEW --> CLASSIFIED : Classified & Assessed
-    CLASSIFIED --> ASSIGNED : Technician Assigned
-    ASSIGNED --> ACKNOWLEDGED : Technician Acknowledged (RespondedAt recorded)
-    ACKNOWLEDGED --> IN_PROGRESS : Investigation & Work Active
-    IN_PROGRESS --> RESOLVED : Solution Submitted (ResolvedAt recorded)
-    RESOLVED --> VERIFIED : Employee / Admin Verifies Resolution
-    RESOLVED --> IN_PROGRESS : Reopened if Issue Persists
-    VERIFIED --> CLOSED : Ticket Archived with Closure Notes
+    [*] --> NEW : Employee Reports
+    NEW --> CLASSIFIED : Priority & Category Assessed
+    CLASSIFIED --> ASSIGNED : Technician Allocated via Strategy
+    ASSIGNED --> ACKNOWLEDGED : Technician Accepts Ticket
+    ACKNOWLEDGED --> IN_PROGRESS : Investigation Initiated
+    IN_PROGRESS --> RESOLVED : Solution Applied & Notes Recorded
+    RESOLVED --> VERIFIED : Employee Validates Fix
+    RESOLVED --> IN_PROGRESS : Verification Fails / Reopened
+    RESOLVED --> CLOSED : Admin Final Sign-off
+    VERIFIED --> CLOSED : Formal Closure & Feedback Logged
     CLOSED --> [*]
 ```
-Any attempt to skip states (e.g. `NEW` ➔ `RESOLVED` or `NEW` ➔ `CLOSED`) throws an `InvalidStateTransitionException` and returns HTTP 400.

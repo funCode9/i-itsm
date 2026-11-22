@@ -1,5 +1,14 @@
 # Technology Selection Justification
 
+**Course:** CS F213 / MAC F212 — Object Oriented Programming  
+**Department:** Department of Computer Science & Information Systems, BITS Pilani  
+**Project:** Intelligent IT Service Management & Incident Resolution System (I-ITSM)  
+**Group Number:** 36  
+**Faculty:** Prof. Subhrakanta Panda  
+**Submission Date:** 22/11/2026  
+
+---
+
 This document outlines the architectural decisions and technology stack selections for the **Intelligent IT Service Management & Incident Resolution System (I-ITSM)**.
 
 ---

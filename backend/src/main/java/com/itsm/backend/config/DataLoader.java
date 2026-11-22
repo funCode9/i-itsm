@@ -10,7 +10,6 @@ import com.itsm.backend.service.intelligence.DuplicateDetectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -39,11 +38,9 @@ public class DataLoader implements CommandLineRunner {
     private final IncidentRepository incidentRepository;
     private final DuplicateDetectionService duplicateDetectionService;
     private final IncidentService incidentService;
-    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
-        migrateP0PriorityConstraint();
         seedSlaPolicies();
         seedSystemConfig();
         seedAdminUser();
@@ -53,37 +50,6 @@ public class DataLoader implements CommandLineRunner {
         seedSampleEmployees();
         correlateExistingDuplicates();
         log.info("=== I-ITSM Data Loader complete ===");
-    }
-
-    /**
-     * Migrates the priority CHECK constraint on incidents and sla_policies tables
-     * to include P0_EMERGENCY (added in Workflow 3 duplicate escalation fix).
-     * Safe to run multiple times — skips if P0_EMERGENCY already present.
-     */
-    private void migrateP0PriorityConstraint() {
-        try {
-            // Check if incidents constraint already includes P0
-            String def = jdbcTemplate.queryForObject(
-                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'incidents_priority_check'",
-                String.class
-            );
-            if (def != null && def.contains("P0_EMERGENCY")) {
-                return; // Already migrated
-            }
-            log.info("Migrating priority CHECK constraints to include P0_EMERGENCY...");
-
-            jdbcTemplate.execute("ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_priority_check");
-            jdbcTemplate.execute("ALTER TABLE incidents ADD CONSTRAINT incidents_priority_check " +
-                "CHECK (priority IN ('P0_EMERGENCY','P1_CRITICAL','P2_HIGH','P3_MEDIUM','P4_LOW'))");
-
-            jdbcTemplate.execute("ALTER TABLE sla_policies DROP CONSTRAINT IF EXISTS sla_policies_priority_check");
-            jdbcTemplate.execute("ALTER TABLE sla_policies ADD CONSTRAINT sla_policies_priority_check " +
-                "CHECK (priority IN ('P0_EMERGENCY','P1_CRITICAL','P2_HIGH','P3_MEDIUM','P4_LOW'))");
-
-            log.info("Priority constraints migrated successfully — P0_EMERGENCY is now a valid priority level.");
-        } catch (Exception e) {
-            log.warn("Could not migrate priority constraints (may already be correct or non-PostgreSQL): {}", e.getMessage());
-        }
     }
 
     private void seedSlaPolicies() {

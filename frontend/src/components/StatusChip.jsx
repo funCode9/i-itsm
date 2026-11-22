@@ -14,6 +14,7 @@ const STATUS_CONFIG = {
 
 const PRIORITY_CONFIG = {
   P0_EMERGENCY: { bg: '#4a0000', color: '#fff', border: '#b91c1c', bar: '#ff0000', label: 'P0 Emergency' },
+  P0: { bg: '#4a0000', color: '#fff', border: '#b91c1c', bar: '#ff0000', label: 'P0 Emergency' },
   P1_CRITICAL: { bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', bar: '#e53e3e', label: 'P1 Critical' },
   P2_HIGH: { bg: '#fff7ed', color: '#c2410c', border: '#fed7aa', bar: '#ed8936', label: 'P2 High' },
   P3_MEDIUM: { bg: '#fefce8', color: '#a16207', border: '#fef08a', bar: '#d69e2e', label: 'P3 Medium' },

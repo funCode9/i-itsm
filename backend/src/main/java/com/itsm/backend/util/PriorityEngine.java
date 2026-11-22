@@ -41,32 +41,31 @@ public final class PriorityEngine {
     public static Priority bumpPriority(Priority current) {
         if (current == null) return Priority.P2_HIGH;
         return switch (current) {
-            case P4_LOW        -> Priority.P3_MEDIUM;
-            case P3_MEDIUM     -> Priority.P2_HIGH;
-            case P2_HIGH       -> Priority.P1_CRITICAL;
-            case P1_CRITICAL   -> Priority.P0_EMERGENCY;
-            case P0_EMERGENCY  -> Priority.P0_EMERGENCY; // already at max
+            case P4_LOW -> Priority.P3_MEDIUM;
+            case P3_MEDIUM -> Priority.P2_HIGH;
+            case P2_HIGH -> Priority.P1_CRITICAL;
+            case P1_CRITICAL, P0_EMERGENCY -> Priority.P0_EMERGENCY;
         };
     }
 
     public static int scoreForPriority(Priority priority) {
         if (priority == null) return 8;
         return switch (priority) {
-            case P0_EMERGENCY -> 30;
-            case P1_CRITICAL  -> 27;
-            case P2_HIGH      -> 16;
-            case P3_MEDIUM    -> 8;
-            case P4_LOW       -> 2;
+            case P0_EMERGENCY -> 36;
+            case P1_CRITICAL -> 27;
+            case P2_HIGH -> 16;
+            case P3_MEDIUM -> 8;
+            case P4_LOW -> 2;
         };
     }
 
     public static String getPriorityLabel(Priority priority) {
         return switch (priority) {
             case P0_EMERGENCY -> "P0 - Emergency";
-            case P1_CRITICAL  -> "P1 - Critical";
-            case P2_HIGH      -> "P2 - High";
-            case P3_MEDIUM    -> "P3 - Medium";
-            case P4_LOW       -> "P4 - Low";
+            case P1_CRITICAL -> "P1 - Critical";
+            case P2_HIGH     -> "P2 - High";
+            case P3_MEDIUM   -> "P3 - Medium";
+            case P4_LOW      -> "P4 - Low";
         };
     }
 }

@@ -278,7 +278,7 @@ export default function ReportIncident() {
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.6 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#9a3412', display: 'flex', alignItems: 'center', gap: 1 }}>
-                      ⚠️ Similar Open Ticket Found ({duplicates.length}) — No Duplicate Will Be Created
+                      Related / Similar Open Tickets ({duplicates.length})
                     </Typography>
                     <Chip
                       label="Word Similarity Match"
@@ -293,8 +293,8 @@ export default function ReportIncident() {
                       }}
                     />
                   </Box>
-                  <Typography variant="body2" sx={{ color: '#7c2d12', mb: 1.2, fontSize: '0.82rem', fontWeight: 600 }}>
-                    🚫 Submitting this report will NOT create a new ticket. Instead, the existing ticket&apos;s priority will be automatically escalated (e.g. P4 → P3, P3 → P2, etc.) to reflect multi-user impact.
+                  <Typography variant="body2" sx={{ color: '#7c2d12', mb: 1.2, fontSize: '0.82rem' }}>
+                    Open tickets related to what you are typing were detected. You can review them below to avoid duplicate reports:
                   </Typography>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     {duplicates.map((dup) => (

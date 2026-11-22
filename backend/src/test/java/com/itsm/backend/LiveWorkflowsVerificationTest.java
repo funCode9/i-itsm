@@ -207,41 +207,39 @@ public class LiveWorkflowsVerificationTest {
     }
 
     @Test
-    @DisplayName("Verify Workflow 3 (Duplicate Block + Priority Escalation): Submitting a duplicate BLOCKS new ticket, escalates existing ticket P3→P2")
-    void testDuplicateReportBlocksCreationAndEscalatesExisting() {
+    @DisplayName("Verify Workflow 3 (Duplicate Clustering & Mutual Priority Upgrade): Both duplicate incidents get their priority upgraded (e.g. P3 -> P2)")
+    void testDuplicateReportUpgradesBothIncidentsPriority() {
         System.out.println("\n========================================================");
-        System.out.println(">>> STARTING DUPLICATE BLOCK + ESCALATION VERIFICATION <<<");
-        System.out.println("Requirement: Duplicate submission MUST NOT create a new ticket.");
-        System.out.println("             Existing ticket priority MUST be escalated (P3→P2, P2→P1, P1→P0).");
+        System.out.println(">>> STARTING DUPLICATE MUTUAL PRIORITY UPGRADE VERIFICATION <<<");
+        System.out.println("Requirement: Priority of BOTH duplicate incidents gets upgraded (e.g. P3 to P2)");
         System.out.println("========================================================");
 
-        String emp1Uname = "block_emp1_" + System.currentTimeMillis();
-        String emp2Uname = "block_emp2_" + System.currentTimeMillis();
-        User employee1 = userService.register(emp1Uname, emp1Uname + "@itsm.local", "Pass@123", "Block Reporter 1", "Engineering", "401", Role.EMPLOYEE);
-        User employee2 = userService.register(emp2Uname, emp2Uname + "@itsm.local", "Pass@123", "Block Reporter 2", "Engineering", "402", Role.EMPLOYEE);
+        String emp1Uname = "surge_emp1_" + System.currentTimeMillis();
+        String emp2Uname = "surge_emp2_" + System.currentTimeMillis();
+        User employee1 = userService.register(emp1Uname, emp1Uname + "@itsm.local", "Pass@123", "Surge Reporter 1", "Engineering", "301", Role.EMPLOYEE);
+        User employee2 = userService.register(emp2Uname, emp2Uname + "@itsm.local", "Pass@123", "Surge Reporter 2", "Engineering", "302", Role.EMPLOYEE);
+
+        String uniqueMarker = "surge_" + System.currentTimeMillis();
+        String testIssueTitle = "Hardware failure incident " + uniqueMarker;
+        String testDesc = "Peripherals malfunctioning in workstation " + uniqueMarker;
 
         // 1. Employee 1 reports initial incident (P3_MEDIUM: impact=2, urgency=2, criticality=2 -> score 8)
-        String uniqueTitle = "keyboard issue test " + System.currentTimeMillis();
         Incident original = incidentService.createIncident(
-                uniqueTitle,
-                "Laptop keyboard keys are unresponsive in Hardware department",
+                testIssueTitle,
+                testDesc,
                 employee1.getId(), null, null, 2, 2, 2
         );
         original = incidentService.classifyAndAssign(original.getId(), null, null, 2, 2, 2, employee1);
         Long originalId = original.getId();
-        String originalNumber = original.getIncidentNumber();
         Priority originalPriority = original.getPriority();
         assertEquals(Priority.P3_MEDIUM, originalPriority, "Original ticket starts at P3 Medium");
-        System.out.println("[Step 1] Initial Incident Created: " + originalNumber
+        System.out.println("[Step 1] Initial Incident Created: " + original.getIncidentNumber() 
                 + " | Title: '" + original.getTitle() + "' | Priority: " + originalPriority);
 
-        // Count total incidents before duplicate submission
-        long countBefore = incidentRepository.count();
-
-        // 2. Employee 2 submits DUPLICATE incident with identical title
+        // 2. Employee 2 submits duplicate incident with identical/similar issue
         CreateIncidentRequest duplicateReq = new CreateIncidentRequest();
-        duplicateReq.setTitle(uniqueTitle);
-        duplicateReq.setDescription("External keyboard is stuck and keys not typing properly");
+        duplicateReq.setTitle(testIssueTitle);
+        duplicateReq.setDescription(testDesc + " duplicate reporting");
         duplicateReq.setImpact(2);
         duplicateReq.setUrgency(2);
         duplicateReq.setBusinessCriticality(2);
@@ -252,44 +250,38 @@ public class LiveWorkflowsVerificationTest {
         ResponseEntity<Incident> response = incidentController.createIncident(duplicateReq, auth);
         assertNotNull(response);
         assertEquals(200, response.getStatusCode().value());
+        assertEquals("true", response.getHeaders().getFirst("X-Incident-Correlated"));
 
-        // 3. CRITICAL: X-Incident-Correlated header MUST be set
-        assertEquals("true", response.getHeaders().getFirst("X-Incident-Correlated"),
-                "Response must have X-Incident-Correlated: true header");
-        System.out.println("[Step 2] Duplicate Submission Blocked. X-Incident-Correlated: true");
+        Incident newDuplicateIncident = response.getBody();
+        assertNotNull(newDuplicateIncident);
 
-        // 4. CRITICAL: Response body is the EXISTING (original) ticket, NOT a new one
-        Incident returned = response.getBody();
-        assertNotNull(returned);
-        assertEquals(originalId, returned.getId(),
-                "Response must return the ORIGINAL ticket ID — no new ticket created");
-        System.out.println("[Step 3] Response contains original ticket: " + returned.getIncidentNumber()
-                + " (ID=" + returned.getId() + " — same as original ID=" + originalId + ")");
+        // 3. Verification: New ticket is created with its own unique incident number and linked
+        assertNotEquals(originalId, newDuplicateIncident.getId(), "New duplicate gets its own unique ticket record");
+        assertNotNull(newDuplicateIncident.getDuplicateOf(), "New duplicate must be linked to root primary ticket");
+        assertEquals(originalId, newDuplicateIncident.getDuplicateOf().getId());
+        assertTrue(newDuplicateIncident.isPotentialDuplicate(), "New ticket must be flagged as potential duplicate");
+        System.out.println("[Step 2] New Duplicate Ticket Created: " + newDuplicateIncident.getIncidentNumber() 
+                + " (Duplicate of: " + original.getIncidentNumber() + ")");
 
-        // 5. CRITICAL: Total incident count UNCHANGED — no new ticket created
-        long countAfter = incidentRepository.count();
-        assertEquals(countBefore, countAfter,
-                "Total incident count must NOT increase — duplicate was blocked, no new ticket created");
-        System.out.println("[Step 4] Total incident count unchanged: " + countBefore + " -> " + countAfter
-                + " (no new ticket created)");
-
-        // 6. CRITICAL: Original ticket priority MUST be escalated (P3 -> P2)
+        // 4. Verification: Priority of BOTH duplicate incidents is upgraded from P3 to P2!
         Incident reloadedOriginal = incidentRepository.findById(originalId).orElseThrow();
-        assertEquals(Priority.P2_HIGH, reloadedOriginal.getPriority(),
-                "Original ticket priority must be escalated from P3_MEDIUM to P2_HIGH");
-        assertTrue(reloadedOriginal.isEscalated(), "Original ticket must be marked as escalated");
-        System.out.println("[Step 5] Priority Escalated: " + originalPriority + " -> " + reloadedOriginal.getPriority()
-                + " | Escalation Level: " + reloadedOriginal.getEscalationLevel());
+        assertEquals(Priority.P2_HIGH, reloadedOriginal.getPriority(), "Original ticket priority must be upgraded from P3 to P2");
+        assertEquals(Priority.P2_HIGH, newDuplicateIncident.getPriority(), "New duplicate ticket priority must also be upgraded from P3 to P2");
+        System.out.println("[Step 3] Priority of BOTH Incidents Upgraded:");
+        System.out.println("   -> Original " + reloadedOriginal.getIncidentNumber() + ": " + originalPriority + " -> " + reloadedOriginal.getPriority());
+        System.out.println("   -> New      " + newDuplicateIncident.getIncidentNumber() + ": " + originalPriority + " -> " + newDuplicateIncident.getPriority());
 
-        // 7. Original reporter notified
+        // 5. Verification: Both tickets are marked escalated
+        assertTrue(reloadedOriginal.isEscalated());
+        assertTrue(newDuplicateIncident.isEscalated());
+
+        // 6. Verification: Both employees notified
         List<Notification> notifs1 = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(employee1.getId());
-        assertFalse(notifs1.isEmpty(), "Original reporter must receive escalation notification");
-
-        // 8. Duplicate submitter (employee2) notified that their report was merged
         List<Notification> notifs2 = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(employee2.getId());
-        assertFalse(notifs2.isEmpty(), "Duplicate submitter must receive 'duplicate blocked' notification");
+        assertFalse(notifs1.isEmpty(), "Original reporter must receive priority upgrade notification");
+        assertFalse(notifs2.isEmpty(), "New duplicate reporter must receive priority upgrade notification");
+        System.out.println("[Step 4] Notifications Delivered to Both Reporters: Priority upgraded to P2_HIGH");
 
-        System.out.println("[Step 6] Both employees notified — reporter received escalation alert, submitter told duplicate was merged");
-        System.out.println(">>> RESULT: DUPLICATE BLOCK + ESCALATION VERIFICATION PASSED 100%! <<<\n");
+        System.out.println(">>> RESULT: MUTUAL DUPLICATE PRIORITY UPGRADE VERIFICATION PASSED 100%! <<<\n");
     }
 }

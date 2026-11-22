@@ -8,9 +8,6 @@ package com.itsm.backend.domain.enums;
  * Score 12–17 → P2_HIGH
  * Score  6–11 → P3_MEDIUM
  * Score  1–5  → P4_LOW
- *
- * P0_EMERGENCY is a special level assigned only by the duplicate escalation engine
- * when a P1_CRITICAL incident receives another duplicate report (multi-user critical outage).
  */
 public enum Priority {
     P0_EMERGENCY,

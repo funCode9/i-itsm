@@ -85,11 +85,11 @@ public class IncidentEscalationService {
         if (newPriority != previousPriority) {
             incident.setPriority(newPriority);
             int newScore = switch (newPriority) {
-                case P0_EMERGENCY -> 30;
-                case P1_CRITICAL  -> 27;
-                case P2_HIGH      -> 16;
-                case P3_MEDIUM    -> 8;
-                case P4_LOW       -> 2;
+                case P0_EMERGENCY -> 36;
+                case P1_CRITICAL -> 27;
+                case P2_HIGH -> 16;
+                case P3_MEDIUM -> 8;
+                case P4_LOW -> 2;
             };
             incident.setPriorityScore(newScore);
             log.info("Incident {} priority bumped from {} to {}", incident.getIncidentNumber(), previousPriority, newPriority);
@@ -155,11 +155,10 @@ public class IncidentEscalationService {
     private Priority bumpPriority(Priority current) {
         if (current == null) return Priority.P2_HIGH;
         return switch (current) {
-            case P4_LOW       -> Priority.P3_MEDIUM;
-            case P3_MEDIUM    -> Priority.P2_HIGH;
-            case P2_HIGH      -> Priority.P1_CRITICAL;
-            case P1_CRITICAL  -> Priority.P0_EMERGENCY;
-            case P0_EMERGENCY -> Priority.P0_EMERGENCY; // cap at P0
+            case P4_LOW -> Priority.P3_MEDIUM;
+            case P3_MEDIUM -> Priority.P2_HIGH;
+            case P2_HIGH -> Priority.P1_CRITICAL;
+            case P1_CRITICAL, P0_EMERGENCY -> Priority.P0_EMERGENCY;
         };
     }
 
