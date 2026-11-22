@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Box, Typography, TextField, MenuItem, Select, FormControl, InputLabel,
@@ -14,15 +14,23 @@ export default function IncidentQueueTable({
   title = "Incident Queue",
   subtitle,
   onSelectIncident,
-  loading = false
+  loading = false,
+  initialPriorityFilter = 'ALL',
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [priorityFilter, setPriorityFilter] = useState(initialPriorityFilter);
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [serviceFilter, setServiceFilter] = useState('ALL');
   const [page, setPage] = useState(1);
   const rowsPerPage = 10;
+
+  useEffect(() => {
+    if (initialPriorityFilter) {
+      setPriorityFilter(initialPriorityFilter);
+      setPage(1);
+    }
+  }, [initialPriorityFilter]);
 
   // Extract distinct categories and services from dataset
   const categories = useMemo(() => {

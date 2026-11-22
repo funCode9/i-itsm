@@ -32,6 +32,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
   const [selectedIncident, setSelectedIncident] = useState(null);
+  const [queuePriority, setQueuePriority] = useState('ALL');
+
+  const emergencyP0Tickets = incidents.filter(
+    (i) => i.priority === 'P0_EMERGENCY' || i.priority === 'P0'
+  );
+  const activeEmergencyP0 = emergencyP0Tickets.filter(
+    (i) => !['RESOLVED', 'VERIFIED', 'CLOSED'].includes(i.status)
+  );
 
   const loadData = () => {
     setLoading(true);
@@ -419,6 +427,155 @@ export default function AdminDashboard() {
         </Grid>
       </Grid>
 
+      {/* Emergency P0 Incident Status & Counter Banner (In the space between) */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 3,
+          p: 2.2,
+          borderRadius: '10px',
+          border: '1px solid',
+          borderColor: activeEmergencyP0.length > 0 ? '#fca5a5' : '#e2e8f0',
+          bgcolor: activeEmergencyP0.length > 0 ? '#fff5f5' : '#ffffff',
+          boxShadow: activeEmergencyP0.length > 0 ? '0 4px 14px rgba(185, 28, 28, 0.08)' : 'none',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: '10px',
+              bgcolor: activeEmergencyP0.length > 0 ? '#4a0000' : '#f8fafc',
+              color: activeEmergencyP0.length > 0 ? '#ffffff' : '#64748b',
+              border: '1px solid',
+              borderColor: activeEmergencyP0.length > 0 ? '#b91c1c' : '#e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <WarningAmberOutlined sx={{ fontSize: 24, color: activeEmergencyP0.length > 0 ? '#ff4d4f' : '#64748b' }} />
+          </Box>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontFamily: 'Space Grotesk, sans-serif',
+                  fontWeight: 700,
+                  color: '#15243b',
+                  fontSize: '0.95rem',
+                }}
+              >
+                Emergency P0 Tickets
+              </Typography>
+              <Chip
+                label={activeEmergencyP0.length > 0 ? `${activeEmergencyP0.length} Active Emergency` : '0 Active'}
+                size="small"
+                sx={{
+                  bgcolor: activeEmergencyP0.length > 0 ? '#4a0000' : '#f1f5f9',
+                  color: activeEmergencyP0.length > 0 ? '#ffffff' : '#475569',
+                  fontWeight: 700,
+                  fontSize: '0.72rem',
+                  height: 22,
+                  border: '1px solid',
+                  borderColor: activeEmergencyP0.length > 0 ? '#b91c1c' : '#cbd5e1',
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.3 }}>
+              {activeEmergencyP0.length > 0
+                ? `${activeEmergencyP0.length} critical multi-user emergency incident(s) escalated to P0 requiring immediate executive dispatch.`
+                : 'No active P0 Emergency incidents in queue. All systems operating within normal parameters.'}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#64748b',
+                display: 'block',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                fontSize: '0.68rem',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Total P0 Tickets
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: emergencyP0Tickets.length > 0 ? '#b91c1c' : '#15243b',
+                fontFamily: 'Space Grotesk, sans-serif',
+              }}
+            >
+              {emergencyP0Tickets.length}
+            </Typography>
+          </Box>
+
+          <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: '#64748b',
+                display: 'block',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                fontSize: '0.68rem',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Active P0 Emergency
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 800,
+                color: activeEmergencyP0.length > 0 ? '#ef4444' : '#059669',
+                fontFamily: 'Space Grotesk, sans-serif',
+              }}
+            >
+              {activeEmergencyP0.length}
+            </Typography>
+          </Box>
+
+          {emergencyP0Tickets.length > 0 && (
+            <Button
+              size="small"
+              variant={queuePriority === 'P0_EMERGENCY' ? 'contained' : 'outlined'}
+              color="error"
+              onClick={() => setQueuePriority(queuePriority === 'P0_EMERGENCY' ? 'ALL' : 'P0_EMERGENCY')}
+              sx={{
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                height: 32,
+                borderRadius: '6px',
+                borderColor: '#b91c1c',
+                bgcolor: queuePriority === 'P0_EMERGENCY' ? '#b91c1c' : '#fff',
+                color: queuePriority === 'P0_EMERGENCY' ? '#fff' : '#b91c1c',
+                '&:hover': {
+                  bgcolor: queuePriority === 'P0_EMERGENCY' ? '#991b1b' : '#fee2e2',
+                },
+              }}
+            >
+              {queuePriority === 'P0_EMERGENCY' ? 'Show All Tickets' : 'Filter P0 Tickets'}
+            </Button>
+          )}
+        </Box>
+      </Paper>
+
       {/* Global Incident Queue Table */}
       <IncidentQueueTable
         incidents={incidents}
@@ -426,6 +583,7 @@ export default function AdminDashboard() {
         subtitle="Live multi-tenant dispatch queue with slide-over drawer action triggers"
         onSelectIncident={(inc) => setSelectedIncident(inc)}
         loading={loading}
+        initialPriorityFilter={queuePriority}
       />
 
       {/* Quick Inspection Drawer */}
